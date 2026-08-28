@@ -1,0 +1,2655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaunt — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B2A3D;
+    --ink-2:#131E2B;
+    --parchment:#F1E9D8;
+    --parchment-2:#E7DBBE;
+    --brass:#B4894F;
+    --brass-dark:#8C6A3B;
+    --trail:#4B6455;      /* Exploration */
+    --signal:#A8402F;     /* Adrenaline */
+    --leisure:#3E6B8A;    /* Leisure */
+    --culture:#6B4E71;    /* Culture */
+    --nature:#7C8B4A;     /* Nature */
+    --slate:#5C6670;
+    --cream:#F1E9D8;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Inter', sans-serif;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(180,137,79,0.10), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(75,100,85,0.12), transparent 45%),
+      var(--ink-2);
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:28px 12px;
+    position:relative;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:'';
+    position:fixed; inset:0;
+    background-image:
+      repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 38px, rgba(241,233,216,0.025) 39px, transparent 40px);
+    pointer-events:none;
+  }
+  .phone{
+    width:390px;
+    max-width:100%;
+    background:var(--parchment);
+    border-radius:34px;
+    border:8px solid var(--ink);
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.6), 0 0 0 1px rgba(180,137,79,0.15);
+    overflow:hidden;
+    position:relative;
+  }
+  .notch{
+    height:22px; background:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .notch::after{
+    content:'';
+    width:70px; height:6px; background:var(--ink-2); border-radius:4px;
+  }
+  .app{
+    height:730px;
+    display:flex;
+    flex-direction:column;
+    background:var(--parchment);
+    position:relative;
+  }
+  .topbar{
+    padding:18px 20px 14px;
+    background:var(--ink);
+    color:var(--cream);
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+  }
+  .topbar::before{
+    content:'';
+    position:absolute; inset:0;
+    background-image: linear-gradient(rgba(241,233,216,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(241,233,216,0.04) 1px, transparent 1px);
+    background-size:14px 14px;
+    opacity:0.5;
+  }
+  .brand{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:22px;
+    letter-spacing:0.5px;
+    position:relative;
+  }
+  .brand span{color:var(--brass);}
+  .tagline{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.3px;
+    color:var(--brass);
+    margin-top:3px;
+    line-height:1.4;
+    max-width:240px;
+    position:relative;
+  }
+  .profile-btn{
+    width:36px; height:36px;
+    border-radius:50%;
+    border:2px solid var(--brass);
+    background:rgba(180,137,79,0.12);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    position:relative;
+  }
+  .profile-btn svg{width:17px; height:17px; color:var(--brass);}
+
+  /* ---- Profile / standing panel ---- */
+  .tier-stamp{
+    width:104px; height:104px;
+    border-radius:50%;
+    border:3px solid var(--brass);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    margin:6px auto 14px;
+    background:radial-gradient(circle, rgba(180,137,79,0.08), transparent 70%);
+    position:relative;
+    transform:rotate(-4deg);
+  }
+  .tier-stamp::before{
+    content:'';
+    position:absolute; inset:6px;
+    border:1px dashed var(--brass);
+    border-radius:50%;
+    opacity:0.6;
+  }
+  .tier-stamp .tier-name{
+    font-family:'Fraunces', serif; font-weight:700; font-size:14px; color:var(--ink);
+    text-align:center; line-height:1.15; padding:0 8px;
+  }
+  .tier-stamp .tier-sub{
+    font-family:'IBM Plex Mono', monospace; font-size:8px; letter-spacing:1px;
+    text-transform:uppercase; color:var(--brass-dark); margin-top:3px;
+  }
+  .stat-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:11px 0; border-bottom:1px solid rgba(27,42,61,0.08);
+  }
+  .stat-row:last-child{border-bottom:none;}
+  .stat-label{font-size:12.5px; color:var(--slate);}
+  .stat-value{font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:600; color:var(--ink);}
+  .bar-track{
+    width:100%; height:7px; border-radius:20px;
+    background:rgba(27,42,61,0.1); overflow:hidden; margin-top:6px;
+  }
+  .bar-fill{height:100%; border-radius:20px; background:var(--trail); transition:width .3s ease;}
+  .perk-row{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 0; border-bottom:1px solid rgba(27,42,61,0.08);
+  }
+  .perk-row:last-child{border-bottom:none;}
+  .perk-icon{
+    width:28px; height:28px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .perk-icon svg{width:14px; height:14px;}
+  .perk-icon.unlocked{background:var(--trail); color:#fff;}
+  .perk-icon.locked{background:rgba(27,42,61,0.08); color:var(--slate);}
+  .perk-text{flex:1;}
+  .perk-name{font-size:12.5px; font-weight:600; color:var(--ink);}
+  .perk-desc{font-size:10.5px; color:var(--slate); margin-top:1px;}
+  .perk-status{
+    font-family:'IBM Plex Mono', monospace; font-size:8.5px; letter-spacing:0.5px; text-transform:uppercase;
+  }
+  .perk-status.unlocked{color:var(--trail);}
+  .perk-status.locked{color:var(--slate);}
+  .upcoming-card{
+    background:var(--parchment-2); border-radius:10px; padding:12px; margin-top:8px;
+    border:1px solid rgba(27,42,61,0.1);
+  }
+  .upcoming-top{display:flex; justify-content:space-between; align-items:flex-start;}
+  .upcoming-name{font-family:'Fraunces', serif; font-weight:600; font-size:13.5px; color:var(--ink);}
+  .upcoming-date{font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--brass-dark);}
+  .upcoming-loc{font-size:11px; color:var(--slate); margin-top:1px;}
+
+  /* ---- Profile tab: header, map, pills ---- */
+  .profile-head{
+    display:flex; align-items:center; gap:12px;
+    padding:4px 0 6px;
+  }
+  .avatar{
+    width:54px; height:54px; border-radius:50%;
+    background:var(--ink); color:var(--brass);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces', serif; font-weight:700; font-size:20px;
+    border:2px solid var(--brass);
+    flex-shrink:0; cursor:pointer; position:relative;
+  }
+  .profile-name{font-family:'Fraunces', serif; font-weight:600; font-size:16px; color:var(--ink);}
+  .profile-rank{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--brass-dark);
+    margin-top:3px;
+  }
+  .profile-tier-chip{
+    display:inline-block; margin-top:5px;
+    font-family:'IBM Plex Mono', monospace; font-size:9px; letter-spacing:0.5px; text-transform:uppercase;
+    color:var(--ink); background:var(--parchment-2); border:1px solid var(--brass);
+    padding:2px 8px; border-radius:20px;
+  }
+  .map-card{
+    background:#fff; border-radius:var(--radius); padding:10px;
+    box-shadow:0 4px 14px -6px rgba(27,42,61,0.2); border:1px solid rgba(27,42,61,0.06);
+  }
+  .map-card svg{width:100%; height:auto; display:block;}
+  .map-caption{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:11px; color:var(--slate); margin-top:8px; padding:0 2px;
+  }
+  .map-legend{display:flex; gap:8px; flex-wrap:wrap;}
+  .legend-dot{display:inline-flex; align-items:center; gap:3px; font-size:9.5px; color:var(--slate);}
+  .legend-dot::before{content:''; width:7px; height:7px; border-radius:50%; background:var(--c); display:inline-block;}
+  .pill-nav{
+    display:flex; gap:6px; margin:16px 0 4px; overflow-x:auto; padding-bottom:2px;
+  }
+  .pill-nav::-webkit-scrollbar{display:none;}
+  .pill{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase;
+    padding:7px 13px; border-radius:20px; white-space:nowrap; cursor:pointer;
+    border:1.5px solid var(--slate); color:var(--slate); background:transparent; flex-shrink:0;
+  }
+  .pill.active{background:var(--ink); color:var(--cream); border-color:var(--ink);}
+  .rec-why{
+    font-size:11px; color:var(--brass-dark); margin-top:6px; font-style:italic;
+  }
+  .want-flag{
+    position:absolute; top:0; right:12px;
+    width:16px; height:22px; background:var(--brass);
+    clip-path:polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+  }
+
+  /* ---- Friend tagging ---- */
+  .friend-grid{display:flex; flex-wrap:wrap; gap:8px; margin:4px 0 6px;}
+  .friend-chip{
+    display:flex; align-items:center; gap:6px;
+    padding:6px 11px 6px 6px; border-radius:20px;
+    border:1.5px solid var(--slate); background:#fff;
+    cursor:pointer; font-size:12px; color:var(--slate);
+    font-family:'Inter', sans-serif;
+  }
+  .friend-chip .mini-avatar{
+    width:20px; height:20px; border-radius:50%;
+    background:var(--parchment-2); color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace; font-size:9px; font-weight:600;
+    flex-shrink:0;
+  }
+  .friend-chip.selected{border-color:var(--brass); background:var(--brass); color:#fff;}
+  .friend-chip.selected .mini-avatar{background:rgba(255,255,255,0.3); color:#fff;}
+
+  /* ---- Photo upload ---- */
+  .photo-box{
+    border:1.5px dashed var(--slate); border-radius:10px; padding:20px 12px;
+    text-align:center; cursor:pointer; color:var(--slate); font-size:12px;
+    background:rgba(255,255,255,0.4);
+  }
+  .photo-box svg{width:22px; height:22px; margin-bottom:6px; display:block; margin-left:auto; margin-right:auto;}
+  .photo-preview-wrap{position:relative;}
+  .photo-preview{width:100%; height:150px; border-radius:10px; object-fit:cover; display:block;}
+  .photo-remove{
+    position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%;
+    background:rgba(19,30,43,0.75); color:#fff; border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:13px;
+  }
+
+  /* ---- Avatar stacks & row thumbnails ---- */
+  .mini-avatar{
+    width:20px; height:20px; border-radius:50%;
+    background:var(--ink); color:var(--brass);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace; font-size:8px; font-weight:600;
+    flex-shrink:0;
+  }
+  .avatar-stack{display:flex; margin-top:6px;}
+  .avatar-stack .mini-avatar{
+    border:1.5px solid var(--parchment); margin-left:-6px;
+  }
+  .avatar-stack .mini-avatar:first-child{margin-left:0;}
+  .row-thumb{width:36px; height:36px; border-radius:8px; object-fit:cover; flex-shrink:0;}
+
+  /* ---- Feed ---- */
+  .feed-post{
+    background:#fff; border-radius:var(--radius); padding:14px;
+    margin-bottom:12px; box-shadow:0 4px 14px -6px rgba(27,42,61,0.2);
+    border:1px solid rgba(27,42,61,0.06); cursor:pointer;
+  }
+  .feed-top{display:flex; gap:10px; align-items:flex-start;}
+  .feed-avatar{width:36px; height:36px; font-size:12px;}
+  .feed-body{flex:1; min-width:0;}
+  .feed-text{font-size:13px; color:var(--ink); line-height:1.4;}
+  .feed-meta{font-size:11px; color:var(--slate); margin-top:3px;}
+  .feed-note{font-size:12.5px; color:var(--slate); margin-top:8px; font-style:italic; line-height:1.4;}
+  .feed-time{font-family:'IBM Plex Mono', monospace; font-size:9.5px; color:var(--slate); flex-shrink:0; margin-left:6px;}
+  .feed-photo{width:100%; height:130px; object-fit:cover; border-radius:8px; margin-top:10px;}
+
+  /* ---- Friend notes (what your friends think) ---- */
+  .friend-note-row{display:flex; gap:10px; padding:10px 0; border-bottom:1px solid rgba(27,42,61,0.08);}
+  .friend-note-row:last-child{border-bottom:none;}
+  .friend-note-top{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink); font-weight:600;}
+  .friend-note-text{font-size:12px; color:var(--slate); margin-top:3px; font-style:italic; line-height:1.4;}
+
+  /* ---- Search ---- */
+  .search-box{
+    display:flex; align-items:center; gap:8px;
+    background:#fff; border:1.5px solid rgba(27,42,61,0.15); border-radius:24px;
+    padding:10px 14px; margin-bottom:4px; color:var(--slate);
+  }
+  .search-box svg{width:17px; height:17px; flex-shrink:0;}
+  .search-box input{
+    border:none; outline:none; background:transparent; flex:1;
+    font-family:'Inter', sans-serif; font-size:13.5px; color:var(--ink);
+  }
+  .search-result-row{
+    display:flex; align-items:center; gap:10px; padding:10px 4px; cursor:pointer;
+    border-bottom:1px solid rgba(27,42,61,0.06);
+  }
+  .search-result-name{font-family:'Fraunces', serif; font-weight:600; font-size:13.5px; color:var(--ink);}
+  .search-result-loc{font-size:11px; color:var(--slate);}
+  .search-badge{
+    font-family:'IBM Plex Mono', monospace; font-size:8px; text-transform:uppercase;
+    color:var(--slate); background:var(--parchment-2); border-radius:10px; padding:2px 7px; flex-shrink:0;
+  }
+  .request-add-row{
+    display:flex; align-items:center; gap:10px;
+    border:1.5px dashed var(--brass); border-radius:10px;
+    padding:14px; margin-top:8px; cursor:pointer;
+    color:var(--slate); font-size:12.5px; line-height:1.4;
+  }
+  .request-add-row svg{width:20px; height:20px; color:var(--brass); flex-shrink:0;}
+  .request-add-link{color:var(--brass-dark); font-weight:600; text-decoration:underline;}
+
+  /* ---- Notifications ---- */
+  .notif-row{display:flex; gap:10px; align-items:flex-start; padding:11px 0; border-bottom:1px solid rgba(27,42,61,0.08);}
+  .notif-row:last-child{border-bottom:none;}
+  .notif-row.unread{background:rgba(180,137,79,0.06); margin:0 -8px; padding:11px 8px; border-radius:8px;}
+  .notif-icon{width:30px; height:30px; border-radius:50%; background:var(--parchment-2); color:var(--brass-dark); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .notif-icon svg{width:15px; height:15px;}
+  .notif-text{font-size:12.5px; color:var(--ink); line-height:1.4;}
+  .notif-time{font-family:'IBM Plex Mono', monospace; font-size:9.5px; color:var(--slate); margin-top:2px;}
+
+  /* ---- Messages ---- */
+  .convo-row{display:flex; gap:10px; align-items:center; padding:12px 0; border-bottom:1px solid rgba(27,42,61,0.08); cursor:pointer;}
+  .convo-row:last-child{border-bottom:none;}
+  .convo-name{font-family:'Fraunces', serif; font-weight:600; font-size:13.5px; color:var(--ink);}
+  .convo-preview{font-size:11.5px; color:var(--slate); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;}
+  .convo-unread-dot{width:8px; height:8px; border-radius:50%; background:var(--signal); flex-shrink:0;}
+  .msg-bubble{max-width:78%; padding:9px 13px; border-radius:14px; font-size:12.5px; line-height:1.4; margin-bottom:8px;}
+  .msg-bubble.them{background:var(--parchment-2); color:var(--ink); border-bottom-left-radius:4px; align-self:flex-start;}
+  .msg-bubble.you{background:var(--ink); color:var(--cream); border-bottom-right-radius:4px; align-self:flex-end; margin-left:auto;}
+  .msg-thread{display:flex; flex-direction:column; max-height:340px; overflow-y:auto; padding:4px 2px;}
+  .msg-input-row{display:flex; gap:8px; margin-top:12px;}
+  .msg-input-row input{flex:1; border:1.5px solid rgba(27,42,61,0.2); border-radius:20px; padding:9px 14px; font-family:'Inter', sans-serif; font-size:13px;}
+
+  /* ---- Badges ---- */
+  .badge-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:6px;}
+  .badge-card{text-align:center; padding:12px 6px; border-radius:12px; background:#fff; border:1px solid rgba(27,42,61,0.08);}
+  .badge-card.locked{opacity:0.4;}
+  .badge-circle{width:44px; height:44px; border-radius:50%; margin:0 auto 8px; display:flex; align-items:center; justify-content:center; background:var(--brass); color:#fff;}
+  .badge-circle svg{width:20px; height:20px;}
+  .badge-card.locked .badge-circle{background:var(--slate);}
+  .badge-name{font-family:'Fraunces', serif; font-weight:600; font-size:11px; color:var(--ink); line-height:1.25;}
+  .badge-desc{font-size:9.5px; color:var(--slate); margin-top:3px; line-height:1.3;}
+
+  /* ---- Year in travel recap ---- */
+  .recap-card{background:linear-gradient(160deg, var(--ink), var(--ink-2)); color:var(--cream); border-radius:16px; padding:24px 20px; text-align:center;}
+  .recap-title{font-family:'Fraunces', serif; font-weight:700; font-size:20px; color:var(--brass);}
+  .recap-sub{font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; opacity:0.7; margin-top:4px;}
+  .recap-stats{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:22px 0;}
+  .recap-stat-num{font-family:'Fraunces', serif; font-weight:700; font-size:28px; color:#fff;}
+  .recap-stat-label{font-family:'IBM Plex Mono', monospace; font-size:9px; letter-spacing:1px; text-transform:uppercase; opacity:0.65; margin-top:2px;}
+  .recap-highlight{border-top:1px dashed rgba(241,233,216,0.3); padding-top:16px; margin-top:6px; font-size:12px; opacity:0.85;}
+
+  /* ---- Photo gallery ---- */
+  .gallery-row{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;}
+  .gallery-row::-webkit-scrollbar{display:none;}
+  .gallery-thumb{position:relative; flex-shrink:0; width:84px; height:84px; border-radius:10px; overflow:hidden;}
+  .gallery-thumb img{width:100%; height:100%; object-fit:cover;}
+  .gallery-thumb .photo-remove{width:20px; height:20px; top:4px; right:4px;}
+  .gallery-add{
+    flex-shrink:0; width:84px; height:84px; border-radius:10px;
+    border:1.5px dashed var(--slate); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--slate);
+  }
+  .photo-note-row{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .photo-note-row .field-select{padding:8px 10px; font-size:12px;}
+
+  /* ---- List creation ---- */
+  .checkbox-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(27,42,61,0.06); cursor:pointer;}
+  .checkbox-row:last-child{border-bottom:none;}
+  .checkbox-box{width:18px; height:18px; border-radius:5px; border:1.5px solid var(--slate); flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  .checkbox-box.checked{background:var(--brass); border-color:var(--brass); color:#fff;}
+  .checkbox-box svg{width:12px; height:12px;}
+
+  /* ---- Curated lists ---- */
+  .list-scroll{display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; margin-bottom:6px;}
+  .list-scroll::-webkit-scrollbar{display:none;}
+  .list-card{
+    flex-shrink:0; width:150px; height:110px; border-radius:12px;
+    background:var(--c); position:relative; overflow:hidden; cursor:pointer;
+    display:flex; align-items:flex-end; padding:10px;
+    box-shadow:0 4px 14px -6px rgba(27,42,61,0.3);
+  }
+  .list-card::before{
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(180deg, transparent 30%, rgba(19,30,43,0.75) 100%);
+  }
+  .list-card-text{position:relative; color:#fff;}
+  .list-card-title{font-family:'Fraunces', serif; font-weight:700; font-size:13px; line-height:1.2;}
+  .list-card-sub{font-family:'IBM Plex Mono', monospace; font-size:9px; margin-top:3px; opacity:0.9;}
+
+  /* ---- Near you ---- */
+  .field-select{
+    width:100%; border:1.5px solid rgba(27,42,61,0.2); background:#fff; border-radius:8px;
+    padding:9px 11px; font-family:'Inter', sans-serif; font-size:13px; color:var(--ink);
+  }
+  .nearby-row{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid rgba(27,42,61,0.08); cursor:pointer;}
+  .nearby-row:last-child{border-bottom:none;}
+  .nearby-dist{font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--brass-dark); flex-shrink:0;}
+
+  /* ---- Leaderboard ---- */
+  .lb-row{display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid rgba(27,42,61,0.08);}
+  .lb-row:last-child{border-bottom:none;}
+  .lb-rank{width:22px; font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:13px; color:var(--slate); text-align:center; flex-shrink:0;}
+  .lb-rank.gold{color:#B4894F;} .lb-rank.silver{color:#8C97A0;} .lb-rank.bronze{color:#A8703F;}
+  .lb-you{background:var(--parchment-2); border-radius:10px; margin:0 -8px; padding:11px 8px;}
+  .lb-stat{font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:13px; color:var(--ink);}
+
+  /* ---- Score chips & tier picker ---- */
+  .score-chip{
+    font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:13px; color:#fff;
+    background:var(--c); border-radius:8px; min-width:36px; height:34px; padding:0 6px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .score-chip-sm{font-size:10.5px; min-width:28px; height:24px; border-radius:6px;}
+  .tier-pills{display:flex; gap:8px; margin:4px 0 16px;}
+  .tier-pill{
+    flex:1; padding:11px 4px; border-radius:10px; border:1.5px solid var(--slate);
+    background:#fff; text-align:center; font-size:11.5px; font-weight:600; color:var(--slate);
+    cursor:pointer; line-height:1.3;
+  }
+  .tier-pill.selected{border-color:var(--c); background:var(--c); color:#fff;}
+
+  /* ---- Recommended / average score row ---- */
+  .mini-score-row{display:flex; gap:14px; margin-top:8px; flex-wrap:wrap;}
+  .mini-score{display:flex; align-items:center; gap:4px; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--slate);}
+  .mini-score svg{width:11px; height:11px; flex-shrink:0;}
+  .mini-score .val{font-weight:700; color:var(--ink);}
+  .mini-score.locked{opacity:0.55; font-style:italic;}
+
+  /* ---- Breakdown (Activities / Cities / Countries) ---- */
+  .breakdown-header{
+    display:flex; justify-content:space-between; align-items:center;
+    margin:14px 0 4px; font-size:12.5px; color:var(--slate);
+  }
+  .breakdown-header .pill{padding:5px 11px; font-size:9.5px;}
+  .breakdown-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:13px 0; border-bottom:1px solid rgba(27,42,61,0.08); cursor:pointer;
+  }
+  .breakdown-row:last-child{border-bottom:none;}
+  .avg-circle{
+    width:42px; height:42px; border-radius:50%;
+    border:2px solid var(--c); background:#fff; color:var(--c);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:13px;
+  }
+  .screen{
+    flex:1;
+    overflow-y:auto;
+    padding:18px 18px 90px;
+    display:none;
+  }
+  .screen.active{display:block;}
+  .screen::-webkit-scrollbar{width:0px;}
+
+  /* ---- Section headers ---- */
+  .sec-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--slate);
+    margin:22px 0 10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .sec-label:first-child{margin-top:0;}
+  .sec-label::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background:repeating-linear-gradient(90deg, var(--slate) 0 3px, transparent 3px 6px);
+    opacity:0.4;
+  }
+
+  /* ---- Stamp badges (category selector) ---- */
+  .stamps{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+  }
+  .stamp{
+    aspect-ratio:1;
+    border-radius:50%;
+    border:2.5px solid var(--c);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:4px;
+    background:radial-gradient(circle, rgba(255,255,255,0.4), transparent 70%);
+    transform:rotate(-5deg);
+    cursor:pointer;
+    position:relative;
+    transition:transform .15s ease, box-shadow .15s ease;
+    color:var(--c);
+  }
+  .stamp:nth-child(2){transform:rotate(4deg);}
+  .stamp:nth-child(3){transform:rotate(-3deg);}
+  .stamp:nth-child(4){transform:rotate(5deg);}
+  .stamp:nth-child(5){transform:rotate(-4deg);}
+  .stamp::before{
+    content:'';
+    position:absolute; inset:5px;
+    border:1px dashed var(--c);
+    border-radius:50%;
+    opacity:0.6;
+  }
+  .stamp:hover{transform:rotate(0deg) scale(1.04);}
+  .stamp.selected{
+    background:var(--c);
+    color:var(--parchment);
+    box-shadow:0 6px 16px -4px rgba(0,0,0,0.35);
+  }
+  .stamp.selected::before{border-color:var(--parchment); opacity:0.5;}
+  .stamp svg{width:22px; height:22px;}
+  .stamp-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:8px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    text-align:center;
+    line-height:1.1;
+  }
+
+  /* ---- Experience cards ---- */
+  .xcard{
+    background:#fff;
+    border-radius:var(--radius);
+    overflow:hidden;
+    box-shadow:0 4px 14px -6px rgba(27,42,61,0.25);
+    margin-bottom:12px;
+    display:flex;
+    border:1px solid rgba(27,42,61,0.06);
+    cursor:pointer;
+  }
+  .xcard-media{
+    width:84px;
+    flex-shrink:0;
+    background:var(--c);
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+  .xcard-media svg{width:30px; height:30px; color:rgba(255,255,255,0.92); position:relative;}
+  .xcard-media::after{
+    content:'';
+    position:absolute; inset:0;
+    background:linear-gradient(160deg, rgba(255,255,255,0.18), transparent 60%);
+  }
+  .xcard-body{
+    padding:12px 14px;
+    flex:1;
+    min-width:0;
+  }
+  .xcard-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .xcard-name{font-family:'Fraunces', serif; font-weight:600; font-size:15px; color:var(--ink); line-height:1.25;}
+  .xcard-loc{font-size:11.5px; color:var(--slate); margin-top:2px;}
+  .xcard-blurb{font-size:12px; color:var(--slate); margin-top:6px; line-height:1.4;}
+  .src-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:8.5px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    padding:2px 6px;
+    border-radius:20px;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .src-viator{background:#e9f0f4; color:#2b5876;}
+  .src-gyg{background:#eef3e6; color:#4a6b2c;}
+  .src-user{background:#f6ece1; color:var(--brass-dark);}
+
+  /* ---- Buttons ---- */
+  .btn{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    border:none;
+    border-radius:10px;
+    padding:12px 16px;
+    cursor:pointer;
+    transition:transform .1s ease, opacity .15s ease;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{background:var(--ink); color:var(--cream);}
+  .btn-brass{background:var(--brass); color:var(--ink);}
+  .btn-outline{background:transparent; border:1.5px solid var(--slate); color:var(--slate);}
+  .btn-approve{background:var(--trail); color:#fff;}
+  .btn-reject{background:transparent; border:1.5px solid var(--signal); color:var(--signal);}
+  .btn-block{width:100%; display:block; text-align:center;}
+  .btn-sm{padding:8px 12px; font-size:12px; border-radius:8px;}
+
+  /* ---- Rank list ---- */
+  .rank-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px 0;
+    border-bottom:1px solid rgba(27,42,61,0.08);
+    cursor:pointer;
+  }
+  .rank-row:last-child{border-bottom:none;}
+  .tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:13px;
+    color:var(--ink);
+    background:var(--parchment-2);
+    border:1px solid rgba(27,42,61,0.15);
+    border-radius:6px;
+    width:34px; height:34px;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    position:relative;
+  }
+  .tag::before{
+    content:'';
+    position:absolute; left:-6px; top:50%; transform:translateY(-50%);
+    width:6px; height:6px; border-radius:50%;
+    background:var(--parchment); border:1px solid rgba(27,42,61,0.15);
+  }
+  .rank-info{flex:1; min-width:0;}
+  .rank-name{font-family:'Fraunces', serif; font-size:14px; font-weight:600; color:var(--ink);}
+  .rank-loc{font-size:11px; color:var(--slate); margin-top:1px;}
+
+  /* ---- Duel screen ---- */
+  .vs-wrap{display:flex; flex-direction:column; gap:14px; align-items:center;}
+  .duel-card{
+    width:100%;
+    background:#fff;
+    border-radius:var(--radius);
+    overflow:hidden;
+    box-shadow:0 8px 22px -8px rgba(27,42,61,0.3);
+    border:1px solid rgba(27,42,61,0.06);
+  }
+  .duel-media{
+    height:110px;
+    background:var(--c);
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+  .duel-media svg{width:38px; height:38px; color:rgba(255,255,255,0.92);}
+  .duel-body{padding:14px 16px;}
+  .duel-name{font-family:'Fraunces', serif; font-weight:600; font-size:17px; color:var(--ink);}
+  .duel-loc{font-size:12px; color:var(--slate); margin:2px 0 8px;}
+  .duel-blurb{font-size:12.5px; color:var(--slate); line-height:1.45; margin-bottom:12px;}
+  .vs-badge{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px; letter-spacing:2px;
+    color:var(--brass-dark);
+    background:var(--parchment-2);
+    border:1px dashed var(--brass);
+    border-radius:20px;
+    padding:4px 12px;
+  }
+  .duel-actions{display:flex; gap:10px; margin-top:6px;}
+
+  /* ---- Queue cards ---- */
+  .qcard{
+    background:#fff;
+    border-radius:var(--radius);
+    padding:14px;
+    box-shadow:0 4px 14px -6px rgba(27,42,61,0.2);
+    margin-bottom:12px;
+    border:1px solid rgba(27,42,61,0.06);
+  }
+  .qcard-top{display:flex; justify-content:space-between; align-items:flex-start;}
+  .qcard-name{font-family:'Fraunces', serif; font-weight:600; font-size:15px; color:var(--ink);}
+  .qcard-loc{font-size:11.5px; color:var(--slate); margin-top:2px;}
+  .qcard-meta{font-size:11px; color:var(--slate); margin:8px 0 10px;}
+  .qcard-meta b{color:var(--ink);}
+  .qcard-actions{display:flex; gap:8px;}
+  .cat-pill{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9px; text-transform:uppercase; letter-spacing:0.5px;
+    padding:3px 8px; border-radius:20px;
+    color:#fff;
+  }
+
+  /* ---- Bottom nav ---- */
+  .nav{
+    position:absolute; bottom:0; left:0; right:0;
+    background:var(--ink);
+    display:flex;
+    padding:9px 2px 13px;
+  }
+  .nav-item{
+    flex:1;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:none; border:none; cursor:pointer;
+    color:rgba(241,233,216,0.5);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:8px; letter-spacing:0.3px; text-transform:uppercase;
+    padding:4px 0;
+    position:relative;
+  }
+  .nav-item svg{width:17px; height:17px;}
+  .nav-item.active{color:var(--brass);}
+  .nav-badge{
+    position:absolute; top:-2px; right:22%;
+    background:var(--signal); color:#fff;
+    font-size:8px; font-weight:700;
+    width:14px; height:14px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Inter', sans-serif;
+  }
+
+  /* ---- FAB ---- */
+  .fab{
+    position:absolute; right:16px; bottom:88px;
+    width:50px; height:50px; border-radius:50%;
+    background:var(--brass); color:var(--ink);
+    border:none; box-shadow:0 8px 18px -4px rgba(180,137,79,0.6);
+    display:none; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .fab svg{width:22px; height:22px;}
+
+  /* ---- Modal ---- */
+  .modal-overlay{
+    position:absolute; inset:0;
+    background:rgba(19,30,43,0.55);
+    display:none;
+    align-items:flex-end;
+    z-index:20;
+  }
+  .modal-overlay.active{display:flex;}
+  .modal{
+    background:var(--parchment);
+    width:100%;
+    border-radius:20px 20px 0 0;
+    padding:20px;
+    max-height:80%;
+    overflow-y:auto;
+  }
+  .modal h3{font-family:'Fraunces', serif; font-size:18px; color:var(--ink); margin-bottom:14px;}
+  .field{margin-bottom:12px;}
+  .field label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px; letter-spacing:1px; text-transform:uppercase;
+    color:var(--slate); display:block; margin-bottom:5px;
+  }
+  .field input, .field textarea, .field select{
+    width:100%;
+    border:1.5px solid rgba(27,42,61,0.2);
+    background:#fff;
+    border-radius:8px;
+    padding:9px 11px;
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    color:var(--ink);
+  }
+  .field textarea{resize:none; height:60px;}
+
+  /* ---- Toast ---- */
+  .toast{
+    position:absolute; top:70px; left:50%; transform:translateX(-50%) translateY(-10px);
+    background:var(--ink); color:var(--cream);
+    padding:10px 16px; border-radius:20px;
+    font-size:12px; font-weight:500;
+    box-shadow:0 8px 20px -6px rgba(0,0,0,0.4);
+    opacity:0; pointer-events:none;
+    transition:all .25s ease;
+    z-index:30;
+    display:flex; align-items:center; gap:8px;
+    white-space:nowrap;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .toast svg{width:14px; height:14px; color:var(--trail); flex-shrink:0;}
+
+  .empty{
+    text-align:center; padding:40px 20px; color:var(--slate);
+  }
+  .empty svg{width:34px; height:34px; margin-bottom:10px; opacity:0.5;}
+  .empty p{font-size:12.5px; line-height:1.5;}
+
+  .caption{
+    font-size:11px; color:var(--slate); text-align:center; margin-top:10px; opacity:0.7;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="notch"></div>
+  <div class="app">
+
+    <div class="topbar">
+      <div>
+        <div class="brand">Ja<span>unt</span></div>
+        <div class="tagline">Rank what you do, remember, live a life you will remember</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:flex-start;">
+        <button class="profile-btn" id="msg-btn" title="Messages">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        </button>
+        <button class="profile-btn" id="notif-btn" title="Notifications" style="position:relative;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+          <span class="nav-badge" id="notif-badge" style="top:-4px; right:-4px; display:none;">0</span>
+        </button>
+        <button class="profile-btn" id="profile-btn" title="Your profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.5-4 4.5-6 7-6s5.5 2 7 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- ===== FEED ===== -->
+    <div class="screen active" id="screen-feed">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="search-input" placeholder="Search activities, places...">
+      </div>
+      <div id="search-results"></div>
+
+      <div id="feed-main">
+        <div class="sec-label" style="margin-top:0;">Featured lists</div>
+        <div class="list-scroll" id="featured-lists"></div>
+
+        <div class="sec-label">Your feed</div>
+        <div id="feed-content"></div>
+      </div>
+    </div>
+
+    <!-- ===== DISCOVER ===== -->
+    <div class="screen" id="screen-discover">
+      <div class="sec-label">Categories</div>
+      <div class="stamps" id="category-stamps"></div>
+
+      <div class="sec-label" style="margin-top:22px;">Near you</div>
+      <select id="near-you-select" class="field-select"></select>
+      <div id="near-you-list" style="margin-top:8px;"></div>
+
+      <div class="sec-label">Trending with friends</div>
+      <div id="trending-list"></div>
+    </div>
+
+    <!-- ===== RANK ===== -->
+    <div class="screen" id="screen-rank">
+      <div class="sec-label">Compare &amp; rank</div>
+      <div id="rank-content"></div>
+    </div>
+
+    <!-- ===== MY LIST ===== -->
+    <div class="screen" id="screen-list">
+      <div class="sec-label">Your ranked categories</div>
+      <div class="stamps" id="list-stamps" style="margin-bottom:6px;"></div>
+      <div class="sec-label" id="list-title">Exploration</div>
+      <div id="list-content"></div>
+    </div>
+
+    <!-- ===== QUEUE ===== -->
+    <div class="screen" id="screen-queue">
+      <div class="sec-label">Pending approval</div>
+      <div id="queue-content"></div>
+    </div>
+
+    <!-- ===== PROFILE ===== -->
+    <div class="screen" id="screen-profile">
+      <div id="profile-header"></div>
+      <div class="sec-label">Travel profile</div>
+      <div id="taste-map"></div>
+      <div class="pill-nav" id="profile-pills"></div>
+      <div id="profile-content"></div>
+    </div>
+
+    <button class="fab" id="fab-add" title="Suggest an activity">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+
+    <div class="nav">
+      <button class="nav-item active" data-tab="feed">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h10M4 18h16"/><circle cx="19" cy="12" r="2"/></svg>
+        Feed
+      </button>
+      <button class="nav-item" data-tab="discover">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 6-6 2 2-6 6-2z"/></svg>
+        Explore
+      </button>
+      <button class="nav-item" data-tab="rank">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3v13M8 16l-3-3M8 16l3-3M16 21V8M16 8l-3 3M16 8l3 3"/></svg>
+        Rank
+        <span class="nav-badge" id="rank-badge" style="display:none;">0</span>
+      </button>
+      <button class="nav-item" data-tab="list">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        List
+      </button>
+      <button class="nav-item" data-tab="queue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Queue
+        <span class="nav-badge" id="queue-badge" style="display:none;">0</span>
+      </button>
+      <button class="nav-item" data-tab="profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.5-4 4.5-6 7-6s5.5 2 7 6"/></svg>
+        Profile
+      </button>
+    </div>
+
+    <!-- ===== DETAIL MODAL ===== -->
+    <div class="modal-overlay" id="detail-overlay" style="z-index:25;">
+      <div class="modal" id="detail-modal"></div>
+    </div>
+
+    <!-- ===== GROUP (BREAKDOWN) DETAIL ===== -->
+    <div class="modal-overlay" id="group-overlay" style="z-index:20;">
+      <div class="modal" id="group-modal"></div>
+    </div>
+
+    <!-- ===== CURATED LIST DETAIL ===== -->
+    <div class="modal-overlay" id="list-overlay" style="z-index:20;">
+      <div class="modal" id="list-modal"></div>
+    </div>
+
+    <!-- ===== NEW LIST / ADD-TO-LIST ===== -->
+    <div class="modal-overlay" id="newlist-overlay" style="z-index:22;">
+      <div class="modal" id="newlist-modal"></div>
+    </div>
+
+    <!-- ===== NOTIFICATIONS ===== -->
+    <div class="modal-overlay" id="notif-overlay" style="z-index:20;">
+      <div class="modal" id="notif-modal"></div>
+    </div>
+
+    <!-- ===== MESSAGES ===== -->
+    <div class="modal-overlay" id="msg-overlay" style="z-index:20;">
+      <div class="modal" id="msg-modal"></div>
+    </div>
+
+    <!-- ===== BADGES ===== -->
+    <div class="modal-overlay" id="badges-overlay" style="z-index:20;">
+      <div class="modal" id="badges-modal"></div>
+    </div>
+
+    <!-- ===== YEAR IN TRAVEL ===== -->
+    <div class="modal-overlay" id="recap-overlay" style="z-index:22;">
+      <div class="modal" id="recap-modal"></div>
+    </div>
+
+    <!-- ===== SUBMIT MODAL ===== -->
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal">
+        <h3>Suggest an activity</h3>
+        <div class="field">
+          <label>Name</label>
+          <input type="text" id="f-name" placeholder="e.g. Hidden waterfall hike">
+        </div>
+        <div class="field">
+          <label>Location</label>
+          <input type="text" id="f-location" placeholder="e.g. Big Sur, California">
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <select id="f-category">
+            <option value="exploration">Exploration</option>
+            <option value="nature">Nature</option>
+            <option value="adrenaline">Adrenaline</option>
+            <option value="leisure">Leisure</option>
+            <option value="culture">Culture</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Why it belongs</label>
+          <textarea id="f-desc" placeholder="What makes this worth doing?"></textarea>
+        </div>
+        <div class="field">
+          <label>Photo</label>
+          <div id="submit-photo-area">
+            <div class="photo-box" id="submit-photo-trigger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.2"/><path d="M8 5l1.5-2h5L16 5"/></svg>
+              Tap to add a photo
+            </div>
+          </div>
+          <input type="file" accept="image/*" id="submit-photo-input" style="display:none;">
+          <label style="display:flex; align-items:flex-start; gap:8px; margin-top:10px; font-size:11.5px; color:var(--slate); line-height:1.4; cursor:pointer;">
+            <input type="checkbox" id="f-license" style="margin-top:2px;">
+            <span>Since I'm first to add this activity, I'm okay with this photo becoming its default cover photo for other travelers browsing it — until they add their own.</span>
+          </label>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:16px;">
+          <button class="btn btn-outline" style="flex:1;" id="modal-cancel">Cancel</button>
+          <button class="btn btn-brass" style="flex:1;" id="modal-submit">Submit for review</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ---------------- ICONS ---------------- */
+const ICONS = {
+  exploration: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19L9 8l4 6 2-3 6 8H3z"/></svg>',
+  adrenaline: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg>',
+  leisure: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="9" r="3.4"/><path d="M12 3.5v1.3M12 14.2v1.3M18.5 9h-1.3M6.8 9H5.5M16.5 4.5l-.9.9M8.4 13.1l-.9.9M16.5 13.5l-.9-.9M8.4 4.9l-.9-.9"/><path d="M2 19c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>',
+  culture: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 21h16M5 21V9M9 21V9M15 21V9M19 21V9M3 9l9-5 9 5"/></svg>',
+  nature: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C7 6 5 10 5 14a7 7 0 0014 0c0-4-2-8-7-11z"/><path d="M12 21V11"/></svg>'
+};
+const COLORS = { exploration:'var(--trail)', adrenaline:'var(--signal)', leisure:'var(--leisure)', culture:'var(--culture)', nature:'var(--nature)' };
+const LABELS = { exploration:'Exploration', adrenaline:'Adrenaline', leisure:'Leisure', culture:'Culture', nature:'Nature' };
+const SRC_CLASS = { Viator:'src-viator', GetYourGuide:'src-gyg', You:'src-user' };
+
+/* ---- Per-activity illustrations (hand-drawn line art, one per seeded activity) ---- */
+const ITEM_ART = {
+  e1: '<svg viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 50 14 20 18 50Z"/><path d="M22 50 28 12 34 50Z"/><path d="M38 50 43 24 48 50Z"/><circle cx="28" cy="30" r="1.4" fill="currentColor" stroke="none"/><circle cx="14" cy="35" r="1.2" fill="currentColor" stroke="none"/><circle cx="43" cy="33" r="1.2" fill="currentColor" stroke="none"/></svg>',
+  e3: '<svg viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="30" cy="26" r="8"/><path d="M6 46 18 24 26 36 34 18 48 46 54 40"/></svg>',
+  n1: '<svg viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 18c6-3 12-3 18 0s12 3 18 0s10-3 10-3"/><path d="M28 18v10"/><path d="M6 34c6-3 12-3 18 0s12 3 18 0s10-3 12-3"/><path d="M40 34v10"/><path d="M4 50c6-3 12-3 18 0s12 3 18 0s10-3 14-3"/></svg>',
+  n2: '<svg viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="44" cy="16" r="6"/><path d="M6 46h48"/><path d="M20 46V28"/><path d="M20 30c-6-2-10-8-8-8s4 4 8 6c2-6 8-8 8-6s-4 4-8 8z"/></svg>',
+  n3: '<svg viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M30 46c-4-14 0-28 4-32c2 6 0 12-2 16c6-4 10-2 12 2c-6 0-10 4-12 8c4 0 8 2 10 6c-6 2-10 0-12-4v4z"/><path d="M6 48c6-4 12-4 18 0s12 4 18 0s10-4 12-4"/></svg>',
+  a1: '<svg viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14h20"/><path d="M18 14v6"/><circle cx="34" cy="26" r="3"/><path d="M34 29v10M34 32l-6 4M34 32l6 4M34 39l-4 6M34 39l4 6"/></svg>',
+  a2: '<svg viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20 54 40"/><circle cx="28" cy="28" r="2.5"/><path d="M28 30.5v6M28 33l-4 3M28 33l4 3M28 36l-3 5M28 36l3 5"/><path d="M6 20v26M54 40v10"/></svg>',
+  l1: '<svg viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 42c8-4 12 4 20 0s12 4 20 0s6-2 8-2"/><path d="M20 34c-2-4 2-6 0-10M32 30c-2-4 2-6 0-10M42 34c-2-4 2-6 0-10"/></svg>',
+  l2: '<svg viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="44" cy="18" r="6"/><path d="M24 44V18l14 14z"/><path d="M8 44h44"/><path d="M6 50c6-3 12-3 18 0s12 3 18 0s6-2 12-2"/></svg>',
+  c1: '<svg viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 30h26l-3 12a4 4 0 01-4 3H21a4 4 0 01-4-3z"/><path d="M40 32c4 0 6 3 6 6s-3 6-7 5"/><path d="M22 24c-1-3 2-5 0-8M30 24c-1-3 2-5 0-8"/></svg>'
+};
+function itemArt(item, cat){
+  return (item && ITEM_ART[item.id]) || ICONS[cat];
+}
+
+const FRIENDS = [
+  {id:'f1', handle:'@maya_t'}, {id:'f2', handle:'@jonasw'}, {id:'f3', handle:'@sofia.k'},
+  {id:'f4', handle:'@alex.p'}, {id:'f5', handle:'@nina.r'}
+];
+function friendAvatarStack(ids){
+  if(!ids || !ids.length) return '';
+  return `<div class="avatar-stack">${ids.map(fid=>{
+    const f = FRIENDS.find(x=>x.id===fid);
+    return f ? `<span class="mini-avatar" title="${f.handle}">${f.handle[1].toUpperCase()}</span>` : '';
+  }).join('')}</div>`;
+}
+
+/* ---------------- MOCK DATA ---------------- */
+let ranked = {
+  exploration: [
+    {id:'e1', name:'Cappadocia Cave Village Walk', loc:'Cappadocia, Türkiye', blurb:'Wander sunken stone villages carved into volcanic rock.', source:'GetYourGuide', tier:'liked', score:8.4, visits:1, lastVisited:'Mar 2026'},
+    {id:'e3', name:'Sunrise Trek to Sarangkot', loc:'Pokhara, Nepal', blurb:'Dawn views over the Annapurna range from a quiet ridge.', source:'Viator', tier:'liked', score:7.7, visits:1, lastVisited:'Nov 2025'}
+  ],
+  nature: [
+    {id:'n1', name:'Plitvice Lakes Walking Trail', loc:'Plitvice, Croatia', blurb:'Wooden boardwalks over sixteen terraced turquoise lakes.', source:'Viator', tier:'liked', score:9.3, visits:2, lastVisited:'Jun 2026'},
+    {id:'n2', name:'Serengeti Sunrise Game Drive', loc:'Serengeti, Tanzania', blurb:'Open-vehicle safari timed to the plains waking up.', source:'GetYourGuide', tier:'liked', score:8.2, visits:1, lastVisited:'Feb 2025'},
+    {id:'n3', name:'Kaikoura Whale Watching', loc:'Kaikoura, New Zealand', blurb:'Sperm whales year-round off a dramatic coastal shelf.', source:'Viator', tier:'fine', score:5.7, visits:1, lastVisited:'Jan 2026'}
+  ],
+  adrenaline: [
+    {id:'a1', name:'Nevis Bungy Jump', loc:'Queenstown, New Zealand', blurb:'134m free fall over the Nevis River gorge.', source:'GetYourGuide', tier:'liked', score:8.5, visits:2, lastVisited:'Jan 2026'},
+    {id:'a2', name:'Zip-line Canopy Tour', loc:'Monteverde, Costa Rica', blurb:'Thirteen platforms strung through cloud-forest canopy.', source:'Viator', tier:'fine', score:5.1, visits:1, lastVisited:'Aug 2025'}
+  ],
+  leisure: [
+    {id:'l1', name:'Blue Lagoon Soak', loc:'Grindavík, Iceland', blurb:'Geothermal, silica-milky water against black lava fields.', source:'GetYourGuide', tier:'liked', score:8.4, visits:1, lastVisited:'Dec 2025'},
+    {id:'l2', name:'Sunset Catamaran Sail', loc:'Santorini, Greece', blurb:'Caldera views with a swim stop and a slow sunset.', source:'Viator', tier:'liked', score:7.2, visits:3, lastVisited:'Jul 2026'}
+  ],
+  culture: [
+    {id:'c1', name:'Kyoto Tea Ceremony', loc:'Kyoto, Japan', blurb:'A quiet, formal ritual in a two-hundred-year-old teahouse.', source:'GetYourGuide', tier:'liked', score:9.2, visits:1, lastVisited:'Apr 2026'}
+  ]
+};
+
+/* ---- Tiered scoring (Beli-style): pick a tier, compare only within it, position maps to a 0-10 score ---- */
+const TIERS_META = {
+  liked:    {label:'I liked it', range:[6.7, 10.0], color:'var(--trail)'},
+  fine:     {label:'It was fine', range:[4.0, 6.7], color:'var(--brass)'},
+  disliked: {label:"I didn't like it", range:[0, 4.0], color:'var(--signal)'}
+};
+function round1(n){ return Math.round(n * 10) / 10; }
+function computeScore(tier, position, total){
+  const [tmin, tmax] = TIERS_META[tier].range;
+  if(total === 0) return round1(tmax - 0.2);
+  const frac = position / total;
+  return round1(tmax - frac * (tmax - tmin));
+}
+function insertByScore(category, item){
+  const list = ranked[category];
+  let idx = list.findIndex(i => i.score < item.score);
+  if(idx === -1) idx = list.length;
+  list.splice(idx, 0, item);
+  return idx;
+}
+function scoreChip(score, tier, small){
+  const color = tier ? TIERS_META[tier].color : 'var(--slate)';
+  return `<div class="score-chip${small ? ' score-chip-sm' : ''}" style="--c:${color}">${score.toFixed(1)}</div>`;
+}
+function miniScoreRow(item){
+  if(item.recommendedScore == null && item.avgScore == null) return '';
+  const perks = perksUnlocked();
+  const rec = item.recommendedScore != null ? `<span class="mini-score">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7-6.3-4.6L5.7 21l2.3-7-6-4.6h7.6z"/></svg>
+      Match <span class="val">${item.recommendedScore.toFixed(1)}</span>
+    </span>` : '';
+  let avg = '';
+  if(item.avgScore != null){
+    avg = perks.avgScore
+      ? `<span class="mini-score">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6M15 14c3 0 6 2 6 5"/></svg>
+          Friends avg <span class="val">${item.avgScore.toFixed(1)}</span>
+        </span>`
+      : `<span class="mini-score locked" title="Invite a friend who joins to unlock">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+          Friends avg locked
+        </span>`;
+  }
+  return `<div class="mini-score-row">${rec}${avg}</div>`;
+}
+
+let pending = [
+  {id:'p1', name:'Hidden Waterfall Hike', loc:'Big Sur, California', category:'exploration', blurb:'An unmarked trailhead leading to a private cove waterfall.', submitter:'@maya_t'},
+  {id:'p2', name:'Midnight Bioluminescence Kayak', loc:'Vieques, Puerto Rico', category:'adrenaline', blurb:'Paddling through glowing plankton in Mosquito Bay after dark.', submitter:'@jonasw'},
+  {id:'p3', name:'Rooftop Jazz & Wine', loc:'Lisbon, Portugal', category:'leisure', blurb:'Live jazz over the Alfama rooftops, natural wine only.', submitter:'@sofia.k'}
+];
+
+let toRank = []; // approved items waiting to be duel-ranked
+let currentCategory = 'exploration';
+let duelState = null;
+
+/* ---- Standing / invites ---- */
+let userPhoto = null;
+let user = {
+  invitesTotal: 5,
+  reliability: 78
+};
+const INVITE_POOL = ['@theo.b', '@priya.k', '@leo.martins', '@hana.w', '@dev.k'];
+let invites = []; // {id, handle, status:'sent'|'joined'}
+
+const TIERS = [
+  {name:'Wanderer', min:0},
+  {name:'Trailblazer', min:35},
+  {name:'Voyager', min:65},
+  {name:'Globetrotter', min:90}
+];
+function standingScore(){
+  return Math.min(100, Math.round((invites.length / user.invitesTotal) * 40 + (user.reliability / 100) * 60));
+}
+function currentTier(){
+  const score = standingScore();
+  let t = TIERS[0];
+  for(const tier of TIERS){ if(score >= tier.min) t = tier; }
+  return t;
+}
+function perksUnlocked(){
+  return {
+    avgScore: invites.some(i => i.status === 'joined'),
+    resPriority: invites.length >= 3 && user.reliability >= 75
+  };
+}
+let upcoming = [
+  {id:'u1', name:'Nevis Bungy Jump', loc:'Queenstown, New Zealand', date:'Sept 14', category:'adrenaline'}
+];
+
+/* ---- Want to try / Recs / Taste map data ---- */
+let wantToTry = {
+  exploration: [{id:'w1', name:"Tiger's Nest Monastery Hike", loc:'Paro, Bhutan', blurb:'A cliffside monastery reached by a steep switchback trail.', source:'Viator', recommendedScore:9.1, avgScore:8.4}],
+  nature: [
+    {id:'w2', name:'Northern Lights Snowmobile Tour', loc:'Tromsø, Norway', blurb:'Chase aurora activity across a frozen fjord backcountry.', source:'GetYourGuide', recommendedScore:9.4, avgScore:8.9},
+    {id:'w6', name:'Sunrise Hike Among the Hoodoos', loc:'Bryce Canyon, Utah, United States', blurb:'Amphitheaters of red-rock spires lit up at first light.', source:'Viator', recommendedScore:9.2, avgScore:8.7}
+  ],
+  adrenaline: [{id:'w3', name:'Skydive Over Interlaken', loc:'Interlaken, Switzerland', blurb:'Freefall above turquoise lakes and the Eiger north face.', source:'Viator', recommendedScore:8.7, avgScore:8.1}],
+  leisure: [{id:'w4', name:'Onsen Ryokan Stay', loc:'Hakone, Japan', blurb:'A night in a traditional inn with private hot-spring baths.', source:'GetYourGuide', recommendedScore:8.9, avgScore:8.6}],
+  culture: [{id:'w5', name:'Terracotta Army Tour', loc:"Xi'an, China", blurb:'Thousands of life-sized soldiers guarding an ancient tomb.', source:'Viator', recommendedScore:8.3, avgScore:7.9}]
+};
+
+let recs = {
+  exploration: [{id:'r1', name:'Faroe Islands Village Hike', loc:'Faroe Islands', why:'Because you ranked Sarangkot and Cappadocia highly', source:'Viator', recommendedScore:9.0, avgScore:8.5}],
+  nature: [{id:'r2', name:'Torres del Paine Trek', loc:'Patagonia, Chile', why:'Popular with travelers who loved Plitvice Lakes', source:'GetYourGuide', recommendedScore:9.5, avgScore:9.0}],
+  adrenaline: [{id:'r3', name:'Whitewater Rafting the Zambezi', loc:'Victoria Falls, Zambia', why:'Popular with fans of your Nevis Bungy Jump', source:'Viator', recommendedScore:8.8, avgScore:8.3}],
+  leisure: [{id:'r4', name:'Amalfi Coast Boat Day', loc:'Positano, Italy', why:'Similar to your top-rated Santorini sail', source:'GetYourGuide', recommendedScore:8.6, avgScore:8.0}],
+  culture: [{id:'r5', name:'Fes Medina Walking Tour', loc:'Fes, Morocco', why:'Matches your taste for immersive local ritual', source:'Viator', recommendedScore:8.4, avgScore:7.8}]
+};
+
+/* ---- Feed: friend activity posts ---- */
+let feedPosts = [
+  {id:'fp1', friend:'@jonasw', itemId:null, itemName:'Midnight Bioluminescence Kayak', category:'adrenaline', loc:'Vieques, Puerto Rico', withYou:true, withFriends:[], score:9.4, tier:'liked', note:"Glowing water, completely unreal. You have to do this one with me sometime.", time:'2h ago'},
+  {id:'fp2', friend:'@alex.p', itemId:'a1', itemName:'Nevis Bungy Jump', category:'adrenaline', loc:'Queenstown, New Zealand', withYou:false, withFriends:['f5'], score:9.6, tier:'liked', note:'Screamed the entire way down. Would absolutely do it again.', time:'5h ago'},
+  {id:'fp3', friend:'@nina.r', itemId:'r2', itemName:'Torres del Paine Trek', category:'nature', loc:'Patagonia, Chile', withYou:false, withFriends:['f1'], score:9.0, tier:'liked', note:'Wind almost knocked us over. Views were worth every gust.', time:'1d ago'},
+  {id:'fp4', friend:'@maya_t', itemId:'p1', itemName:'Hidden Waterfall Hike', category:'exploration', loc:'Big Sur, California', withYou:false, withFriends:[], score:8.8, tier:'liked', note:'Found it completely by accident — no crowds, no signage.', time:'1d ago'},
+  {id:'fp5', friend:'@sofia.k', itemId:'l2', itemName:'Sunset Catamaran Sail', category:'leisure', loc:'Santorini, Greece', withYou:false, withFriends:[], score:8.1, tier:'liked', note:'Went right after you recommended it — you were right about the caldera views.', time:'2d ago'},
+  {id:'fp6', friend:'@sofia.k', itemId:null, itemName:'Rooftop Jazz & Wine', category:'leisure', loc:'Lisbon, Portugal', withYou:false, withFriends:['f5'], score:8.6, tier:'liked', note:'Perfect way to end a long day of walking the Alfama.', time:'3d ago'}
+];
+
+function findAnyItemById(id){
+  if(!id) return null;
+  for(const cat of Object.keys(ranked)){ const hit = ranked[cat].find(i => i.id === id); if(hit) return {...hit, category:cat}; }
+  for(const cat of Object.keys(wantToTry)){ const hit = wantToTry[cat].find(i => i.id === id); if(hit) return {...hit, category:cat}; }
+  for(const cat of Object.keys(recs)){ const hit = recs[cat].find(i => i.id === id); if(hit) return {...hit, category:cat}; }
+  return null;
+}
+
+function renderFeed(){
+  renderFeaturedLists();
+  const el = document.getElementById('feed-content');
+  el.innerHTML = feedPosts.map(p => {
+    const withList = [...p.withFriends.map(fid => FRIENDS.find(f => f.id===fid)?.handle).filter(Boolean), ...(p.withYou ? ['you'] : [])];
+    return `<div class="feed-post" data-feed-open="${p.itemId || ''}">
+      <div class="feed-top">
+        <span class="mini-avatar feed-avatar">${p.friend[1].toUpperCase()}</span>
+        <div class="feed-body">
+          <div class="feed-text"><b>${p.friend}</b> ranked <b>${p.itemName}</b>${withList.length ? ` with <b>${withList.join(', ')}</b>` : ''}</div>
+          <div class="feed-meta">${LABELS[p.category]} · ${p.loc}</div>
+          <div class="feed-note">"${p.note}"</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+          ${scoreChip(p.score, p.tier, true)}
+          <span class="feed-time">${p.time}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('[data-feed-open]').forEach(card => {
+    const id = card.dataset.feedOpen;
+    if(!id) return;
+    const item = findAnyItemById(id);
+    if(item) card.addEventListener('click', () => openDetail(item));
+  });
+}
+
+function friendsThinkSection(item){
+  const matches = feedPosts.filter(p => p.itemId === item.id);
+  if(!matches.length) return '';
+  const perks = perksUnlocked();
+  if(!perks.avgScore){
+    return `<div class="sec-label">What your friends think</div>
+    <div class="empty" style="padding:18px 10px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+      <p>Invite a friend who joins to see what your friends think.</p>
+    </div>`;
+  }
+  return `<div class="sec-label">What your friends think</div>
+    ${matches.map(p => `
+      <div class="friend-note-row">
+        <span class="mini-avatar">${p.friend[1].toUpperCase()}</span>
+        <div style="flex:1;">
+          <div class="friend-note-top">${p.friend}${scoreChip(p.score, p.tier, true)}</div>
+          <div class="friend-note-text">"${p.note}"</div>
+        </div>
+      </div>`).join('')}`;
+}
+
+/* ---- Notifications ---- */
+let notifications = [
+  {id:'nt1', icon:'invite', text:'<b>@alex.p</b> accepted your invite and joined Jaunt', time:'1h ago', read:false},
+  {id:'nt2', icon:'rank', text:'<b>@nina.r</b> ranked <b>Torres del Paine Trek</b>', time:'6h ago', read:false},
+  {id:'nt3', icon:'waitlist', text:'Your spot on <b>Nevis Bungy Jump</b> was claimed from the waitlist', time:'1d ago', read:false},
+  {id:'nt4', icon:'tag', text:'<b>@sofia.k</b> tagged you in <b>Midnight Bioluminescence Kayak</b>', time:'2d ago', read:true},
+  {id:'nt5', icon:'queue', text:'Your suggestion <b>Hidden Waterfall Hike</b> is pending review', time:'3d ago', read:true}
+];
+const NOTIF_ICONS = {
+  invite: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>',
+  rank: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3v13M8 16l-3-3M8 16l3-3M16 21V8M16 8l-3 3M16 8l3 3"/></svg>',
+  waitlist: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>',
+  tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>',
+  queue: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+};
+function renderNotifBadge(){
+  const badge = document.getElementById('notif-badge');
+  const unread = notifications.filter(n => !n.read).length;
+  badge.style.display = unread ? 'flex' : 'none';
+  badge.textContent = unread;
+}
+function openNotifications(){
+  document.getElementById('notif-modal').innerHTML = `
+    <h3 style="font-family:'Fraunces',serif; font-size:18px; color:var(--ink); margin-bottom:12px;">Notifications</h3>
+    ${notifications.map(n => `
+      <div class="notif-row ${n.read ? '' : 'unread'}">
+        <div class="notif-icon">${NOTIF_ICONS[n.icon]}</div>
+        <div>
+          <div class="notif-text">${n.text}</div>
+          <div class="notif-time">${n.time}</div>
+        </div>
+      </div>`).join('')}
+    <button class="btn btn-brass btn-block" id="notif-close" style="margin-top:14px;">Close</button>
+  `;
+  document.getElementById('notif-overlay').classList.add('active');
+  notifications.forEach(n => n.read = true);
+  renderNotifBadge();
+  document.getElementById('notif-close').addEventListener('click', () => document.getElementById('notif-overlay').classList.remove('active'));
+}
+document.getElementById('notif-overlay').addEventListener('click', (e) => {
+  if(e.target.id === 'notif-overlay') document.getElementById('notif-overlay').classList.remove('active');
+});
+
+/* ---- Messages ---- */
+let conversations = [
+  {id:'c1', friend:'@nina.r', unread:true, messages:[
+    {from:'them', text:'You have to do Torres del Paine next time you\'re in Patagonia', time:'6h ago'},
+    {from:'them', text:'Wind was insane but so worth it', time:'6h ago'}
+  ]},
+  {id:'c2', friend:'@jonasw', unread:false, messages:[
+    {from:'them', text:'That kayak tour was unreal, you\'d love it', time:'2d ago'},
+    {from:'you', text:'Adding it to my want-to-try list right now', time:'2d ago'}
+  ]},
+  {id:'c3', friend:'@sofia.k', unread:false, messages:[
+    {from:'them', text:'Went to the catamaran sail you ranked — you were right', time:'2d ago'}
+  ]}
+];
+function renderConvoList(){
+  document.getElementById('msg-modal').innerHTML = `
+    <h3 style="font-family:'Fraunces',serif; font-size:18px; color:var(--ink); margin-bottom:12px;">Messages</h3>
+    ${conversations.map(c => {
+      const last = c.messages[c.messages.length-1];
+      return `<div class="convo-row" data-convo="${c.id}">
+        <span class="mini-avatar" style="width:34px;height:34px;font-size:11px;">${c.friend[1].toUpperCase()}</span>
+        <div style="flex:1; min-width:0;">
+          <div class="convo-name">${c.friend}</div>
+          <div class="convo-preview">${last.from === 'you' ? 'You: ' : ''}${last.text}</div>
+        </div>
+        ${c.unread ? '<span class="convo-unread-dot"></span>' : ''}
+      </div>`;
+    }).join('')}
+    <button class="btn btn-outline btn-block" id="msg-close" style="margin-top:12px;">Close</button>
+  `;
+  document.querySelectorAll('[data-convo]').forEach(row => row.addEventListener('click', () => openThread(row.dataset.convo)));
+  document.getElementById('msg-close').addEventListener('click', () => document.getElementById('msg-overlay').classList.remove('active'));
+}
+function openThread(convoId){
+  const convo = conversations.find(c => c.id === convoId);
+  convo.unread = false;
+  document.getElementById('msg-modal').innerHTML = `
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+      <button id="thread-back" style="background:none; border:none; cursor:pointer; color:var(--ink);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <h3 style="font-family:'Fraunces',serif; font-size:16px; color:var(--ink);">${convo.friend}</h3>
+    </div>
+    <div class="msg-thread" id="msg-thread-inner">
+      ${convo.messages.map(m => `<div class="msg-bubble ${m.from}">${m.text}</div>`).join('')}
+    </div>
+    <div class="msg-input-row">
+      <input type="text" id="msg-input" placeholder="Message ${convo.friend}...">
+      <button class="btn btn-brass btn-sm" id="msg-send">Send</button>
+    </div>
+  `;
+  document.getElementById('thread-back').addEventListener('click', renderConvoList);
+  document.getElementById('msg-send').addEventListener('click', () => {
+    const input = document.getElementById('msg-input');
+    if(!input.value.trim()) return;
+    convo.messages.push({from:'you', text:input.value.trim(), time:'now'});
+    openThread(convoId);
+  });
+}
+document.getElementById('msg-overlay').addEventListener('click', (e) => {
+  if(e.target.id === 'msg-overlay') document.getElementById('msg-overlay').classList.remove('active');
+});
+
+/* ---- Achievements / badges ---- */
+const BADGE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="6"/><path d="M9 13l-2 8 5-3 5 3-2-8"/></svg>';
+function computeAchievements(){
+  const allRanked = Object.values(ranked).flat();
+  const countries = new Set(allRanked.map(i => i.loc.split(',').pop().trim()));
+  const categoriesUsed = Object.keys(ranked).filter(cat => ranked[cat].length > 0).length;
+  const maxScore = allRanked.length ? Math.max(...allRanked.map(i => i.score)) : 0;
+  return [
+    {name:'First Jaunt', desc:'Log your first activity', unlocked: allRanked.length >= 1},
+    {name:'Well-Rounded', desc:'Log all 5 categories', unlocked: categoriesUsed >= 5},
+    {name:'Globetrotter', desc:'Visit 5+ countries', unlocked: countries.size >= 5},
+    {name:'World Wanderer', desc:'Visit 10+ countries', unlocked: countries.size >= 10},
+    {name:'Thrill Seeker', desc:'Log 3 adrenaline activities', unlocked: ranked.adrenaline.length >= 3},
+    {name:'Unforgettable', desc:'Score something 9.5+', unlocked: maxScore >= 9.5},
+    {name:'Reliable Traveler', desc:'Reach 90% reliability', unlocked: user.reliability >= 90},
+    {name:'Networked', desc:'Have an invite join', unlocked: invites.some(i => i.status === 'joined')},
+    {name:'Ten Logged', desc:'Log 10 activities total', unlocked: allRanked.length >= 10}
+  ];
+}
+function openBadges(){
+  const badges = computeAchievements();
+  document.getElementById('badges-modal').innerHTML = `
+    <h3 style="font-family:'Fraunces',serif; font-size:18px; color:var(--ink); margin-bottom:4px;">Badges</h3>
+    <p class="caption" style="text-align:left; margin-bottom:6px;">${badges.filter(b=>b.unlocked).length} of ${badges.length} unlocked</p>
+    <div class="badge-grid">
+      ${badges.map(b => `
+        <div class="badge-card ${b.unlocked ? '' : 'locked'}">
+          <div class="badge-circle">${BADGE_ICON}</div>
+          <div class="badge-name">${b.name}</div>
+          <div class="badge-desc">${b.desc}</div>
+        </div>`).join('')}
+    </div>
+    <button class="btn btn-brass btn-block" id="badges-close" style="margin-top:16px;">Close</button>
+  `;
+  document.getElementById('badges-overlay').classList.add('active');
+  document.getElementById('badges-close').addEventListener('click', () => document.getElementById('badges-overlay').classList.remove('active'));
+}
+document.getElementById('badges-overlay').addEventListener('click', (e) => {
+  if(e.target.id === 'badges-overlay') document.getElementById('badges-overlay').classList.remove('active');
+});
+
+/* ---- Year in travel recap ---- */
+function openRecap(){
+  const allRanked = Object.values(ranked).flat();
+  const countries = new Set(allRanked.map(i => i.loc.split(',').pop().trim()));
+  const topItem = allRanked.length ? allRanked.reduce((a,b) => a.score > b.score ? a : b) : null;
+  const topCatEntry = Object.entries(ranked).sort((a,b) => b[1].length - a[1].length)[0];
+  document.getElementById('recap-modal').innerHTML = `
+    <div class="recap-card">
+      <div class="recap-title">Your Year in Travel</div>
+      <div class="recap-sub">2026 so far</div>
+      <div class="recap-stats">
+        <div><div class="recap-stat-num">${allRanked.length}</div><div class="recap-stat-label">Places logged</div></div>
+        <div><div class="recap-stat-num">${countries.size}</div><div class="recap-stat-label">Countries</div></div>
+        <div><div class="recap-stat-num">${LABELS[topCatEntry[0]]}</div><div class="recap-stat-label">Top category</div></div>
+        <div><div class="recap-stat-num">${topItem ? topItem.score.toFixed(1) : '—'}</div><div class="recap-stat-label">Highest score</div></div>
+      </div>
+      ${topItem ? `<div class="recap-highlight">Your best-rated experience was <b>${topItem.name}</b>, ${topItem.loc}</div>` : ''}
+    </div>
+    <button class="btn btn-brass btn-block" id="recap-close" style="margin-top:16px;">Close</button>
+  `;
+  document.getElementById('recap-overlay').classList.add('active');
+  document.getElementById('recap-close').addEventListener('click', () => document.getElementById('recap-overlay').classList.remove('active'));
+}
+document.getElementById('recap-overlay').addEventListener('click', (e) => {
+  if(e.target.id === 'recap-overlay') document.getElementById('recap-overlay').classList.remove('active');
+});
+
+/* ---- Curated lists ---- */
+const curatedLists = [
+  {id:'cl1', title:'New Zealand Adventure', subtitle:'Adrenaline & nature on the South Island', color:'var(--signal)', itemIds:['a1','n3']},
+  {id:'cl2', title:'Best of the Mediterranean', subtitle:'Coastlines worth the trip', color:'var(--leisure)', itemIds:['l2','r4']},
+  {id:'cl3', title:'Epic Treks', subtitle:'Trails to build a trip around', color:'var(--trail)', itemIds:['e3','r2']},
+  {id:'cl4', title:'Japan Essentials', subtitle:'Ritual, rest, and reflection', color:'var(--culture)', itemIds:['c1','w4']}
+];
+let myLists = [];
+const LIST_COLORS = ['var(--trail)','var(--signal)','var(--leisure)','var(--culture)','var(--nature)','var(--brass)'];
+function listBeenCount(list){
+  return list.itemIds.filter(id => findRankedItemById(id)).length;
+}
+function renderFeaturedLists(){
+  const el = document.getElementById('featured-lists');
+  const all = [...curatedLists, ...myLists];
+  el.innerHTML = all.map(l => `
+    <div class="list-card" style="--c:${l.color}" data-list="${l.id}">
+      <div class="list-card-text">
+        <div class="list-card-title">${l.title}</div>
+        <div class="list-card-sub">You've been to ${listBeenCount(l)} of ${l.itemIds.length}</div>
+      </div>
+    </div>`).join('') + `
+    <div class="list-card" style="--c:var(--slate); align-items:center; justify-content:center;" id="new-list-card">
+      <div class="list-card-text" style="text-align:center;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:22px;height:22px; margin-bottom:4px;"><path d="M12 5v14M5 12h14"/></svg>
+        <div class="list-card-title" style="font-size:12px;">New list</div>
+      </div>
+    </div>`;
+  el.querySelectorAll('[data-list]').forEach(card => {
+    const list = all.find(l => l.id === card.dataset.list);
+    card.addEventListener('click', () => openListDetail(list));
+  });
+  document.getElementById('new-list-card').addEventListener('click', () => openCreateListForm(null));
+}
+function openListDetail(list){
+  const items = list.itemIds.map(id => findAnyItemById(id)).filter(Boolean);
+  document.getElementById('list-modal').innerHTML = `
+    <h3 style="font-family:'Fraunces',serif; font-size:18px; color:var(--ink); margin-bottom:2px;">${list.title}</h3>
+    <p class="caption" style="text-align:left; margin-bottom:14px;">${list.subtitle} · been to ${listBeenCount(list)} of ${items.length}</p>
+    <div id="list-detail-inner">${items.map(i => xcardHTML(i)).join('')}</div>
+    <button class="btn btn-brass btn-block" id="list-close" style="margin-top:8px;">Close</button>
+  `;
+  document.getElementById('list-overlay').classList.add('active');
+  document.getElementById('list-close').addEventListener('click', () => document.getElementById('list-overlay').classList.remove('active'));
+  wireDetailClicks(document.getElementById('list-detail-inner'), items);
+}
+document.getElementById('list-overlay').addEventListener('click', (e) => {
+  if(e.target.id === 'list-overlay') document.getElementById('list-overlay').classList.remove('active');
+});
+
+const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+
+function openCreateListForm(prefillItemId){
+  const allRanked = Object.values(ranked).flat();
+  let selected = new Set(prefillItemId ? [prefillItemId] : []);
+
+  function render(){
+    document.getElementById('newlist-modal').innerHTML = `
+      <h3 style="font-family:'Fraunces',serif; font-size:18px; color:var(--ink); margin-bottom:12px;">Create a list</h3>
+      <div class="field"><label>Title</label><input type="text" id="nl-title" placeholder="e.g. Solo Trip 2027"></div>
+      <div class="sec-label">Include</div>
+      <div id="nl-items">${allRanked.map(i => `
+        <div class="checkbox-row" data-check="${i.id}">
+          <div class="checkbox-box ${selected.has(i.id) ? 'checked' : ''}">${selected.has(i.id) ? CHECK_SVG : ''}</div>
+          <div style="flex:1;"><div class="rank-name" style="font-size:12.5px;">${i.name}</div><div class="rank-loc">${i.loc}</div></div>
+        </div>`).join('')}</div>
+      <button class="btn btn-brass btn-block" id="nl-create" style="margin-top:14px;">Create list</button>
+      <button class="btn btn-outline btn-block" id="nl-cancel" style="margin-top:8px;">Cancel</button>
+    `;
+    document.querySelectorAll('[data-check]').forEach(row => row.addEventListener('click', () => {
+      const id = row.dataset.check;
+      if(selected.has(id)) selected.delete(id); else selected.add(id);
+      render();
+    }));
+    document.getElementById('nl-cancel').addEventListener('click', () => document.getElementById('newlist-overlay').classList.remove('active'));
+    document.getElementById('nl-create').addEventListener('click', () => {
+      const title = document.getElementById('nl-title').value.trim();
+      if(!title){ toast('Give your list a title', false); return; }
+      if(!selected.size){ toast('Add at least one place', false); return; }
+      myLists.push({
+        id:'ml' + Date.now(),
+        title,
+        subtitle:'Your list',
+        color: LIST_COLORS[myLists.length % LIST_COLORS.length],
+        itemIds:[...selected]
+      });
+      document.getElementById('newlist-overlay').classList.remove('active');
+      renderAll();
+      toast(`"${title}" created`);
+    });
+  }
+  render();
+  document.getElementById('newlist-overlay').classList.add('active');
+}
+
+function openListChooser(item){
+  function render(){
+    const all = [...curatedLists, ...myLists];
+    document.getElementById('newlist-modal').innerHTML = `
+      <h3 style="font-family:'Fraunces',serif; font-size:18px; color:var(--ink); margin-bottom:4px;">Add to a list</h3>
+      <p class="caption" style="text-align:left; margin-bottom:10px;">${item.name}</p>
+      ${all.length ? all.map(l => `
+        <div class="checkbox-row" data-tolist="${l.id}">
+          <div class="checkbox-box ${l.itemIds.includes(item.id) ? 'checked' : ''}">${l.itemIds.includes(item.id) ? CHECK_SVG : ''}</div>
+          <div style="flex:1;"><div class="rank-name" style="font-size:12.5px;">${l.title}</div><div class="rank-loc">${l.itemIds.length} places</div></div>
+        </div>`).join('') : `<p class="caption" style="text-align:left;">No lists yet.</p>`}
+      <button class="btn btn-brass btn-block" id="nl-new-from-chooser" style="margin-top:14px;">+ New list with this</button>
+      <button class="btn btn-outline btn-block" id="nl-chooser-close" style="margin-top:8px;">Done</button>
+    `;
+    document.querySelectorAll('[data-tolist]').forEach(row => row.addEventListener('click', () => {
+      const list = all.find(l => l.id === row.dataset.tolist);
+      if(list.itemIds.includes(item.id)) list.itemIds = list.itemIds.filter(id => id !== item.id);
+      else list.itemIds.push(item.id);
+      render();
+    }));
+    document.getElementById('nl-new-from-chooser').addEventListener('click', () => openCreateListForm(item.id));
+    document.getElementById('nl-chooser-close').addEventListener('click', () => {
+      document.getElementById('newlist-overlay').classList.remove('active');
+      renderFeaturedLists();
+    });
+  }
+  render();
+  document.getElementById('newlist-overlay').classList.add('active');
+}
+document.getElementById('newlist-overlay').addEventListener('click', (e) => {
+  if(e.target.id === 'newlist-overlay') document.getElementById('newlist-overlay').classList.remove('active');
+});
+
+/* ---- Search ---- */
+function allCatalogItems(){
+  let out = [];
+  Object.keys(ranked).forEach(cat => ranked[cat].forEach(i => out.push({...i, category:cat, bucket:'Been'})));
+  Object.keys(wantToTry).forEach(cat => wantToTry[cat].forEach(i => out.push({...i, category:cat, bucket:'Want to try'})));
+  Object.keys(recs).forEach(cat => recs[cat].forEach(i => out.push({...i, category:cat, bucket:'Recommended'})));
+  return out;
+}
+function renderSearchResults(query){
+  const el = document.getElementById('search-results');
+  const feedMain = document.getElementById('feed-main');
+  if(!query.trim()){
+    el.innerHTML = '';
+    feedMain.style.display = 'block';
+    return;
+  }
+  feedMain.style.display = 'none';
+  const q = query.trim().toLowerCase();
+  const results = allCatalogItems().filter(i => i.name.toLowerCase().includes(q) || i.loc.toLowerCase().includes(q));
+  const resultsHTML = results.length ? results.map(i => `
+    <div class="search-result-row" data-open-id="${i.id}">
+      <div style="width:34px;height:34px;border-radius:8px;flex-shrink:0;${mediaStyle(i.category, i.photo)}"></div>
+      <div style="flex:1;">
+        <div class="search-result-name">${i.name}</div>
+        <div class="search-result-loc">${i.loc}</div>
+      </div>
+      <span class="search-badge">${i.bucket}</span>
+    </div>`).join('') : `<div class="empty" style="padding:24px 10px 10px;"><p>Nothing matches "${query}"</p></div>`;
+
+  const requestRow = `
+    <div class="request-add-row" id="request-add-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      <span>Can't find <b>"${query}"</b>? <span class="request-add-link">Request to add it</span></span>
+    </div>`;
+
+  el.innerHTML = resultsHTML + requestRow;
+  wireDetailClicks(el, results);
+  document.getElementById('request-add-btn').addEventListener('click', () => {
+    openSubmitModal(query.trim());
+  });
+}
+
+/* ---- Leaderboard ---- */
+const LB_FRIENDS = [
+  {handle:'@nina.r', count:34},
+  {handle:'@alex.p', count:29},
+  {handle:'@sofia.k', count:22},
+  {handle:'@maya_t', count:19},
+  {handle:'@jonasw', count:14}
+];
+function renderLeaderboard(){
+  const you = { handle:'You', count: Object.values(ranked).reduce((n,arr)=>n+arr.length,0), isYou:true };
+  const all = [...LB_FRIENDS, you].sort((a,b) => b.count - a.count);
+  const medalClass = ['gold','silver','bronze'];
+  return `
+    <div class="sec-label" style="margin-top:0;">Places logged</div>
+    ${all.map((p, idx) => `
+      <div class="lb-row ${p.isYou ? 'lb-you' : ''}">
+        <div class="lb-rank ${medalClass[idx] || ''}">${idx+1}</div>
+        <span class="mini-avatar">${p.handle === 'You' ? 'Y' : p.handle[1].toUpperCase()}</span>
+        <div style="flex:1; font-size:13px; font-weight:${p.isYou?'700':'500'}; color:var(--ink);">${p.handle}</div>
+        <div class="lb-stat">${p.count}</div>
+      </div>`).join('')}
+    <p class="caption" style="margin-top:10px; text-align:left;">Friend counts are illustrative — a real build would pull these from actual accounts.</p>
+  `;
+}
+
+/* ---- Real-world map: equirectangular projection from actual coordinates ---- */
+const MAP_W = 720, MAP_H = 360;
+function project(lon, lat){
+  return [ (lon + 180) * (MAP_W/360), (90 - lat) * (MAP_H/180) ];
+}
+function smoothClosedPath(points){
+  if(points.length < 3) return '';
+  const n = points.length;
+  let d = `M ${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;
+  for(let i=0;i<n;i++){
+    const p0 = points[(i-1+n)%n], p1 = points[i], p2 = points[(i+1)%n], p3 = points[(i+2)%n];
+    const c1x = p1[0] + (p2[0]-p0[0])/6, c1y = p1[1] + (p2[1]-p0[1])/6;
+    const c2x = p2[0] - (p3[0]-p1[0])/6, c2y = p2[1] - (p3[1]-p1[1])/6;
+    d += ` C ${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d + ' Z';
+}
+// [lon, lat] control points — simplified silhouettes anchored to real coordinates, smoothed for a field-journal look
+const CONTINENTS = {
+  northAmerica: [[-168,66],[-140,70],[-100,72],[-80,63],[-65,50],[-70,42],[-75,35],[-80,26],[-88,30],[-97,26],[-90,16],[-83,9],[-88,14],[-105,22],[-117,32],[-124,42],[-130,55],[-150,60],[-168,66]],
+  southAmerica: [[-77,7],[-60,10],[-50,0],[-35,-8],[-40,-20],[-48,-25],[-57,-35],[-65,-45],[-68,-55],[-72,-52],[-71,-40],[-70,-25],[-78,-5],[-77,7]],
+  europe: [[-9,43],[-9,53],[-5,58],[5,62],[25,70],[30,60],[40,55],[30,45],[20,40],[12,38],[3,43],[-9,43]],
+  africa: [[-17,15],[10,37],[32,31],[43,12],[40,-1],[35,-20],[20,-34],[12,-18],[9,4],[-10,6],[-17,15]],
+  asia: [[40,42],[50,45],[60,55],[90,73],[140,73],[170,66],[160,55],[140,45],[122,31],[110,20],[100,7],[95,5],[80,7],[72,20],[67,24],[55,25],[45,30],[35,35],[40,42]],
+  australia: [[113,-22],[122,-18],[136,-12],[145,-15],[153,-28],[150,-37],[140,-38],[131,-32],[115,-34],[113,-22]],
+  newZealand: [[173,-35],[178,-38],[174,-41],[166,-46],[169,-44],[173,-35]],
+  japan: [[130,32],[132,34],[138,36],[141,39],[142,43],[139,41],[135,35],[130,32]]
+};
+function continentPaths(){
+  return Object.values(CONTINENTS).map(pts => {
+    const projected = pts.map(([lon,lat]) => project(lon,lat));
+    return `<path d="${smoothClosedPath(projected)}"/>`;
+  }).join('');
+}
+
+const COORDS = {
+  e1: {lon:34.83, lat:38.64},    // Cappadocia, Türkiye
+  e3: {lon:83.95, lat:28.24},    // Sarangkot, Nepal
+  n1: {lon:15.62, lat:44.86},    // Plitvice, Croatia
+  n2: {lon:34.83, lat:-2.33},    // Serengeti, Tanzania
+  n3: {lon:173.68, lat:-42.40},  // Kaikoura, New Zealand
+  a1: {lon:168.66, lat:-45.03},  // Queenstown, New Zealand
+  a2: {lon:-84.82, lat:10.30},   // Monteverde, Costa Rica
+  l1: {lon:-22.45, lat:63.88},   // Blue Lagoon, Iceland
+  l2: {lon:25.43, lat:36.39},    // Santorini, Greece
+  c1: {lon:135.77, lat:35.01},   // Kyoto, Japan
+  w1: {lon:89.42, lat:27.49},    // Paro, Bhutan
+  w2: {lon:18.96, lat:69.65},    // Tromsø, Norway
+  w3: {lon:7.87, lat:46.69},     // Interlaken, Switzerland
+  w4: {lon:139.03, lat:35.23},   // Hakone, Japan
+  w5: {lon:109.27, lat:34.38},   // Xi'an, China
+  w6: {lon:-112.17, lat:37.62},  // Bryce Canyon, Utah, USA
+  r1: {lon:-6.91, lat:62.00},    // Faroe Islands
+  r2: {lon:-73.03, lat:-50.95},  // Patagonia, Chile
+  r3: {lon:25.86, lat:-17.92},   // Victoria Falls, Zambia
+  r4: {lon:14.48, lat:40.63},    // Positano, Italy
+  r5: {lon:-5.00, lat:34.06}     // Fes, Morocco
+};
+function haversineKm(a, b){
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * Math.PI/180;
+  const dLon = (b.lon - a.lon) * Math.PI/180;
+  const s = Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1-s));
+}
+function computeBeenPins(){
+  return Object.keys(COORDS).filter(id => findRankedItemById(id)).map(id => ({id, ...COORDS[id]}));
+}
+function findRankedItemById(id){
+  for(const cat of Object.keys(ranked)){
+    if(ranked[cat].find(i => i.id === id)) return true;
+  }
+  return false;
+}
+function findRankedItem(id){
+  for(const cat of Object.keys(ranked)){
+    const hit = ranked[cat].find(i => i.id === id);
+    if(hit) return {...hit, category:cat};
+  }
+  return null;
+}
+let profileSubTab = 'been';
+let breakdownSubTab = 'activities';
+let breakdownSort = 'count';
+
+function tierForScore(score){
+  for(const key of Object.keys(TIERS_META)){
+    const [min, max] = TIERS_META[key].range;
+    if(score >= min && score <= max) return key;
+  }
+  return 'fine';
+}
+function avgCircle(score){
+  const tier = tierForScore(score);
+  return `<div class="avg-circle" style="--c:${TIERS_META[tier].color}">${score.toFixed(1)}</div>`;
+}
+function computeBreakdown(type){
+  let allItems = [];
+  Object.keys(ranked).forEach(cat => ranked[cat].forEach(i => allItems.push({...i, category:cat})));
+
+  const groups = {};
+  allItems.forEach(i => {
+    let key;
+    if(type === 'activities') key = LABELS[i.category];
+    else if(type === 'cities') key = i.loc.split(',')[0].trim();
+    else key = i.loc.split(',').pop().trim();
+    if(!groups[key]) groups[key] = { label:key, items:[], category: type==='activities' ? i.category : null };
+    groups[key].items.push(i);
+  });
+
+  let arr = Object.values(groups).map(g => {
+    const sortedItems = [...g.items].sort((a,b) => b.score - a.score);
+    return {
+      label: g.label,
+      count: sortedItems.length,
+      avg: round1(sortedItems.reduce((s,i) => s + i.score, 0) / sortedItems.length),
+      items: sortedItems,
+      category: g.category
+    };
+  });
+  arr.sort((a,b) => breakdownSort === 'count' ? (b.count - a.count) : (b.avg - a.avg));
+  return arr;
+}
+
+/* ---------------- HELPERS ---------------- */
+function toast(msg, icon=true){
+  const t = document.getElementById('toast');
+  t.innerHTML = (icon ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>' : '') + '<span>'+msg+'</span>';
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2400);
+}
+
+function xcardHTML(item, showRank){
+  const photo = item.photo;
+  const cat = item.category || currentCategory;
+  return `<div class="xcard" data-open-id="${item.id}">
+    <div class="xcard-media" style="${mediaStyle(cat, photo)}">${photo ? '' : itemArt(item, cat)}</div>
+    <div class="xcard-body">
+      <div class="xcard-top">
+        <div>
+          <div class="xcard-name">${item.name}</div>
+          <div class="xcard-loc">${item.loc}</div>
+        </div>
+        ${item.score != null ? scoreChip(item.score, item.tier, true) : ''}
+      </div>
+      <div class="xcard-blurb">${item.blurb}</div>
+      ${friendAvatarStack(item.friends)}
+    </div>
+  </div>`;
+}
+
+function rankRowHTML(item, idx){
+  return `<div class="rank-row" data-open-id="${item.id}">
+    <div class="tag">#${idx+1}</div>
+    ${item.score != null ? scoreChip(item.score, item.tier) : ''}
+    ${item.photo ? `<img class="row-thumb" src="${item.photo}">` : ''}
+    <div class="rank-info">
+      <div class="rank-name">${item.name}</div>
+      <div class="rank-loc">${item.loc}${item.visits ? ` · ${item.visits} visit${item.visits>1?'s':''}` : ''}</div>
+      ${friendAvatarStack(item.friends)}
+    </div>
+  </div>`;
+}
+
+function wireDetailClicks(containerEl, items){
+  containerEl.querySelectorAll('[data-open-id]').forEach(el => {
+    const item = items.find(i => i.id === el.dataset.openId);
+    if(item) el.addEventListener('click', () => openDetail(item));
+  });
+}
+
+function findItemCategory(id){
+  for(const cat of Object.keys(ranked)){
+    if(ranked[cat].some(i => i.id === id)) return cat;
+  }
+  return null;
+}
+
+function openDetail(item){
+  const cat = item.category || findItemCategory(item.id) || currentCategory;
+  // normalize photos to {src, caption} objects, migrating older plain-string entries
+  item.photos = (item.photos || (item.photo ? [item.photo] : [])).map(p =>
+    typeof p === 'string' ? {src:p, caption:''} : p
+  );
+  const isRanked = item.score != null;
+  const primaryPhoto = item.photos[0] ? item.photos[0].src : null;
+  document.getElementById('detail-modal').innerHTML = `
+    <div class="duel-media" style="${mediaStyle(cat, primaryPhoto)} height:150px; border-radius:12px; margin-bottom:14px;">${primaryPhoto ? '' : itemArt(item, cat)}</div>
+    <h3 style="font-family:'Fraunces',serif; font-size:19px; color:var(--ink); margin-bottom:2px;">${item.name}</h3>
+    <div class="xcard-loc" style="margin-bottom:10px;">${item.loc}</div>
+    ${item.score != null ? `<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">${scoreChip(item.score, item.tier)}<span class="caption" style="margin:0;">${TIERS_META[item.tier] ? TIERS_META[item.tier].label : ''}</span>
+      <button class="btn btn-outline btn-sm" id="detail-rerank" style="margin-left:auto;">Re-rank</button></div>` : ''}
+    ${miniScoreRow(item)}
+    <p style="font-size:13px; color:var(--slate); line-height:1.5; margin:14px 0;">${item.blurb || item.why || ''}</p>
+    ${item.friends && item.friends.length ? `<div class="sec-label" style="margin-top:0;">With</div>${friendAvatarStack(item.friends)}` : ''}
+    ${friendsThinkSection(item)}
+
+    ${item.visits ? `
+    <div class="sec-label">Visits</div>
+    <div class="stat-row">
+      <div class="stat-label">${item.visits} visit${item.visits>1?'s':''}${item.lastVisited ? ` · last ${item.lastVisited}` : ''}</div>
+      <button class="btn btn-outline btn-sm" id="detail-revisit">Log a revisit</button>
+    </div>` : ''}
+
+    ${isRanked ? `<button class="btn btn-outline btn-block" id="detail-addlist" style="margin-bottom:14px;">Add to a list</button>` : ''}
+
+    ${isRanked ? `
+    <div class="sec-label">Your notes</div>
+    <textarea id="detail-note" class="field-select" style="height:56px; resize:none;" placeholder="What do you want to remember about this?">${item.note || ''}</textarea>` : ''}
+
+    <div class="sec-label">Photos</div>
+    ${item.coverPhoto ? `<p class="caption" style="text-align:left; margin-top:0;">Cover photo shared by whoever first added this activity — visible to other travelers until they add their own.</p>` : ''}
+    <div id="detail-gallery">
+      ${item.photos.map((p, idx) => `
+        <div class="photo-note-row">
+          <div class="gallery-thumb" style="width:52px; height:52px;"><img src="${p.src}"><button class="photo-remove" style="width:18px;height:18px;" data-photo-idx="${idx}">✕</button></div>
+          <input type="text" class="field-select" data-caption-idx="${idx}" placeholder="Label this photo (e.g. waterfall)" value="${p.caption || ''}">
+        </div>`).join('')}
+    </div>
+    <div class="gallery-add" id="detail-photo-trigger" style="width:100%; height:44px; margin-top:6px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M5 12h14"/></svg>
+      <span style="font-size:11px; margin-left:6px;">Add a photo</span>
+    </div>
+    <input type="file" accept="image/*" id="detail-photo-input" style="display:none;">
+
+    <div class="sec-label">Book this experience</div>
+    <div class="empty" style="padding:22px 10px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+      <p>Booking links will appear here once activity partners are connected.</p>
+    </div>
+    <button class="btn btn-outline btn-block" disabled style="opacity:0.5; cursor:not-allowed; margin-bottom:10px;">Booking coming soon</button>
+    <button class="btn btn-brass btn-block" id="detail-close">Close</button>
+  `;
+  document.getElementById('detail-overlay').classList.add('active');
+  document.getElementById('detail-close').addEventListener('click', () => document.getElementById('detail-overlay').classList.remove('active'));
+
+  const noteEl = document.getElementById('detail-note');
+  if(noteEl) noteEl.addEventListener('input', (e) => { item.note = e.target.value; });
+
+  document.getElementById('detail-photo-trigger').addEventListener('click', () => document.getElementById('detail-photo-input').click());
+  document.getElementById('detail-photo-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      item.photos.push({src: ev.target.result, caption:''});
+      item.photo = item.photos[0].src;
+      openDetail(item);
+      renderAll();
+    };
+    reader.readAsDataURL(file);
+  });
+  document.querySelectorAll('[data-photo-idx]').forEach(btn => btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    item.photos.splice(Number(btn.dataset.photoIdx), 1);
+    item.photo = item.photos[0] ? item.photos[0].src : null;
+    openDetail(item);
+    renderAll();
+  }));
+  document.querySelectorAll('[data-caption-idx]').forEach(input => input.addEventListener('input', (e) => {
+    item.photos[Number(input.dataset.captionIdx)].caption = e.target.value;
+  }));
+  const revisitBtn = document.getElementById('detail-revisit');
+  if(revisitBtn) revisitBtn.addEventListener('click', () => {
+    item.visits = (item.visits || 0) + 1;
+    item.lastVisited = 'today';
+    openDetail(item);
+    renderAll();
+    toast(`Logged another visit to ${item.name}`);
+  });
+  const rerankBtn = document.getElementById('detail-rerank');
+  if(rerankBtn) rerankBtn.addEventListener('click', () => {
+    const itemCat = findItemCategory(item.id);
+    if(!itemCat) return;
+    ranked[itemCat] = ranked[itemCat].filter(i => i.id !== item.id);
+    item.category = itemCat;
+    item.tier = null;
+    item.score = null;
+    toRank.push(item);
+    document.getElementById('detail-overlay').classList.remove('active');
+    document.querySelector('.nav-item[data-tab="rank"]').click();
+    renderAll();
+    toast(`${item.name} moved to Rank — redo your comparison`);
+  });
+  const addListBtn = document.getElementById('detail-addlist');
+  if(addListBtn) addListBtn.addEventListener('click', () => openListChooser(item));
+}
+document.getElementById('detail-overlay').addEventListener('click', (e) => {
+  if(e.target.id === 'detail-overlay') document.getElementById('detail-overlay').classList.remove('active');
+});
+
+/* ---------------- DISCOVER SCREEN ---------------- */
+function renderStamps(container, clickable){
+  const el = document.getElementById(container);
+  el.innerHTML = Object.keys(LABELS).map(cat => `
+    <div class="stamp ${cat===currentCategory ? 'selected':''}" style="--c:${COLORS[cat]}" data-cat="${cat}">
+      ${ICONS[cat]}
+      <div class="stamp-label">${LABELS[cat]}</div>
+    </div>`).join('');
+  el.querySelectorAll('.stamp').forEach(s => s.addEventListener('click', () => {
+    currentCategory = s.dataset.cat;
+    renderAll();
+  }));
+}
+
+function renderDiscover(){
+  renderStamps('category-stamps', true);
+  renderNearYou();
+  const items = ranked[currentCategory] || [];
+  const trending = document.getElementById('trending-list');
+  trending.innerHTML = items.length ? items.map(i => xcardHTML({...i, category:currentCategory})).join('')
+    : `<div class="empty">${ICONS[currentCategory]}<p>Nothing ranked in this category yet.<br>Suggest an activity to get started.</p></div>`;
+  wireDetailClicks(trending, items);
+}
+
+let nearYouSelectedId = 'a1';
+function nearYouOptions(){
+  const seen = new Set();
+  const opts = [];
+  allCatalogItems().forEach(i => {
+    if(!seen.has(i.loc) && COORDS[i.id]){
+      seen.add(i.loc);
+      opts.push({id:i.id, label:i.loc});
+    }
+  });
+  return opts;
+}
+function isUSLocation(loc){
+  return /united states|\busa\b/i.test(loc);
+}
+function formatDistance(km, isUS){
+  if(isUS){
+    const mi = km * 0.621371;
+    return `${mi < 1 ? '<1' : Math.round(mi)} mi`;
+  }
+  return `${km < 1 ? '<1' : Math.round(km)} km`;
+}
+function renderNearYou(){
+  const select = document.getElementById('near-you-select');
+  const opts = nearYouOptions();
+  select.innerHTML = opts.map(o => `<option value="${o.id}" ${o.id===nearYouSelectedId?'selected':''}>${o.label}</option>`).join('');
+
+  const originOpt = opts.find(o => o.id === nearYouSelectedId);
+  const useMiles = originOpt ? isUSLocation(originOpt.label) : false;
+  const origin = COORDS[nearYouSelectedId];
+  const items = allCatalogItems().filter(i => i.id !== nearYouSelectedId && COORDS[i.id]);
+  const withDist = items.map(i => ({...i, dist: haversineKm(origin, COORDS[i.id])})).sort((a,b) => a.dist - b.dist).slice(0,5);
+
+  const list = document.getElementById('near-you-list');
+  list.innerHTML = withDist.map(i => `
+    <div class="nearby-row" data-open-id="${i.id}">
+      <div style="width:32px;height:32px;border-radius:8px;flex-shrink:0;${mediaStyle(i.category, i.photo)}"></div>
+      <div style="flex:1;">
+        <div class="rank-name" style="font-size:13px;">${i.name}</div>
+        <div class="rank-loc">${i.loc}</div>
+      </div>
+      <div class="nearby-dist">${formatDistance(i.dist, useMiles)}</div>
+    </div>`).join('');
+  wireDetailClicks(list, withDist);
+}
+
+/* ---------------- MY LIST SCREEN ---------------- */
+function renderList(){
+  renderStamps('list-stamps');
+  document.getElementById('list-title').textContent = LABELS[currentCategory] + ' — ranked';
+  const items = ranked[currentCategory] || [];
+  const el = document.getElementById('list-content');
+  el.innerHTML = items.length ? items.map((i, idx) => rankRowHTML(i, idx)).join('') : `<div class="empty"><p>No ranked activities in ${LABELS[currentCategory]} yet.</p></div>`;
+  wireDetailClicks(el, items);
+}
+
+/* ---------------- QUEUE SCREEN ---------------- */
+function renderQueue(){
+  const el = document.getElementById('queue-content');
+  document.getElementById('queue-badge').style.display = pending.length ? 'flex' : 'none';
+  document.getElementById('queue-badge').textContent = pending.length;
+  el.innerHTML = pending.length ? pending.map(p => `
+    <div class="qcard">
+      ${p.photo ? `<img src="${p.photo}" style="width:100%; height:110px; object-fit:cover; border-radius:8px; margin-bottom:10px;">` : ''}
+      <div class="qcard-top">
+        <div>
+          <div class="qcard-name">${p.name}</div>
+          <div class="qcard-loc">${p.loc}</div>
+        </div>
+        <span class="cat-pill" style="background:${COLORS[p.category]}">${LABELS[p.category]}</span>
+      </div>
+      <div class="qcard-meta">${p.blurb}<br><b>Submitted by</b> ${p.submitter}${p.licensed ? '<br><span style="color:var(--trail); font-weight:600;">Photo will become this activity\'s shared cover photo</span>' : ''}</div>
+      <div class="qcard-actions">
+        <button class="btn btn-approve btn-sm" style="flex:1;" data-approve="${p.id}">Approve</button>
+        <button class="btn btn-reject btn-sm" style="flex:1;" data-reject="${p.id}">Reject</button>
+      </div>
+    </div>`).join('') : `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><p>Queue is clear. New suggestions will land here for review.</p></div>`;
+
+  el.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', () => approveItem(b.dataset.approve)));
+  el.querySelectorAll('[data-reject]').forEach(b => b.addEventListener('click', () => rejectItem(b.dataset.reject)));
+}
+
+function approveItem(id){
+  const idx = pending.findIndex(p => p.id === id);
+  if(idx === -1) return;
+  const item = pending.splice(idx,1)[0];
+  if(item.photo && item.licensed){
+    item.coverPhoto = item.photo;
+  }
+  toRank.push(item);
+  renderAll();
+  toast('Approved — added to ' + LABELS[item.category] + ' to rank');
+}
+function rejectItem(id){
+  pending = pending.filter(p => p.id !== id);
+  renderAll();
+  toast('Suggestion removed', false);
+}
+
+/* ---------------- RANK / DUEL SCREEN ---------------- */
+function startDuel(item){
+  ranked[item.category] || (ranked[item.category] = []);
+  duelState = { item, category:item.category, tier:null, lo:null, hi:null, tierList:null, comparisons:0, logged:false, taggedFriends:[], photo:null };
+  renderRank();
+}
+
+function currentOpponentIndex(){
+  return Math.floor((duelState.lo + duelState.hi) / 2);
+}
+
+function mediaStyle(category, photo){
+  return photo ? `--c:${COLORS[category]}; background-image:url(${photo}); background-size:cover; background-position:center;` : `--c:${COLORS[category]};`;
+}
+
+function renderLogStep(){
+  const item = duelState.item;
+  const selected = duelState.taggedFriends;
+  const photo = duelState.photo;
+  return `
+    <div class="caption" style="margin-bottom:14px;">Log this before ranking it</div>
+    <div class="duel-card" style="margin-bottom:16px;">
+      <div class="duel-media" style="${mediaStyle(duelState.category, photo)}">${photo ? '' : itemArt(item, duelState.category)}</div>
+      <div class="duel-body">
+        <div class="duel-name">${item.name}</div>
+        <div class="duel-loc">${item.loc}</div>
+      </div>
+    </div>
+
+    <div class="sec-label" style="margin-top:0;">How was it?</div>
+    <div class="tier-pills" id="tier-pills">
+      ${Object.keys(TIERS_META).map(t => `<button class="tier-pill ${duelState.tier===t?'selected':''}" style="--c:${TIERS_META[t].color}" data-tier="${t}">${TIERS_META[t].label}</button>`).join('')}
+    </div>
+
+    <div class="sec-label" style="margin-top:0;">Who were you with?</div>
+    <div class="friend-grid" id="friend-grid">
+      ${FRIENDS.map(f => `<button class="friend-chip ${selected.includes(f.id)?'selected':''}" data-friend="${f.id}"><span class="mini-avatar">${f.handle[1].toUpperCase()}</span>${f.handle}</button>`).join('')}
+    </div>
+    <p class="caption" style="text-align:left; margin:2px 0 4px;">Tagged friends get this added to their own queue to rank.</p>
+
+    <div class="sec-label">Add a photo</div>
+    ${photo
+      ? `<div class="photo-preview-wrap"><img class="photo-preview" src="${photo}"><button class="photo-remove" id="remove-photo">✕</button></div>`
+      : `<div class="photo-box" id="photo-trigger">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.2"/><path d="M8 5l1.5-2h5L16 5"/></svg>
+          Tap to add a photo
+        </div>`}
+    <input type="file" accept="image/*" id="photo-input" style="display:none;">
+
+    <button class="btn btn-brass btn-block" id="start-ranking" style="margin-top:16px;">${duelState.tier ? 'Start ranking' : 'Pick how it was to continue'}</button>
+  `;
+}
+
+function wireLogStep(){
+  document.querySelectorAll('#tier-pills .tier-pill').forEach(b => b.addEventListener('click', () => {
+    duelState.tier = b.dataset.tier;
+    renderRank();
+  }));
+  document.querySelectorAll('#friend-grid .friend-chip').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.friend;
+    if(duelState.taggedFriends.includes(id)) duelState.taggedFriends = duelState.taggedFriends.filter(x => x !== id);
+    else duelState.taggedFriends.push(id);
+    renderRank();
+  }));
+  const trigger = document.getElementById('photo-trigger');
+  if(trigger) trigger.addEventListener('click', () => document.getElementById('photo-input').click());
+  document.getElementById('photo-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { duelState.photo = ev.target.result; renderRank(); };
+    reader.readAsDataURL(file);
+  });
+  const removeBtn = document.getElementById('remove-photo');
+  if(removeBtn) removeBtn.addEventListener('click', () => { duelState.photo = null; renderRank(); });
+  document.getElementById('start-ranking').addEventListener('click', () => {
+    if(!duelState.tier){ toast('Pick how it was first', false); return; }
+    duelState.tierList = ranked[duelState.category].filter(i => i.tier === duelState.tier);
+    duelState.lo = 0;
+    duelState.hi = duelState.tierList.length;
+    duelState.logged = true;
+    if(duelState.taggedFriends.length){
+      toast(`Tagged ${duelState.taggedFriends.length} friend${duelState.taggedFriends.length>1?'s':''} — they'll get this to rank too`);
+    }
+    renderRank();
+  });
+}
+
+function renderRank(){
+  const badge = document.getElementById('rank-badge');
+  badge.style.display = toRank.length ? 'flex' : 'none';
+  badge.textContent = toRank.length;
+
+  const el = document.getElementById('rank-content');
+
+  if(!duelState && toRank.length){
+    startDuel(toRank[0]);
+    return;
+  }
+
+  if(!duelState){
+    el.innerHTML = `<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3v13M8 16l-3-3M8 16l3-3M16 21V8M16 8l-3 3M16 8l3 3"/></svg>
+      <p>Nothing to rank right now.<br>Approve a suggestion in the Queue, or check back after your next trip.</p>
+    </div>`;
+    return;
+  }
+
+  if(!duelState.logged){
+    el.innerHTML = renderLogStep();
+    wireLogStep();
+    return;
+  }
+
+  if(duelState.lo >= duelState.hi){
+    // finished this tier's comparisons — compute score, attach details, insert by score
+    const score = computeScore(duelState.tier, duelState.lo, duelState.tierList.length);
+    duelState.item.tier = duelState.tier;
+    duelState.item.score = score;
+    duelState.item.friends = duelState.taggedFriends;
+    duelState.item.photo = duelState.photo;
+    duelState.item.visits = 1;
+    duelState.item.lastVisited = 'today';
+    const globalIdx = insertByScore(duelState.category, duelState.item);
+    toRank = toRank.filter(t => t.id !== duelState.item.id);
+    el.innerHTML = `<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <p style="color:var(--ink); font-weight:600; font-size:14px;">${duelState.item.name} scored ${score.toFixed(1)}/10</p>
+      <p>#${globalIdx + 1} in your ${LABELS[duelState.category]} list.</p>
+    </div>
+    <button class="btn btn-brass btn-block" id="continue-rank">Continue</button>`;
+    document.getElementById('continue-rank').addEventListener('click', () => {
+      duelState = null;
+      renderAll();
+    });
+    return;
+  }
+
+  const oppIdx = currentOpponentIndex();
+  const opponent = duelState.tierList[oppIdx];
+  const item = duelState.item;
+
+  el.innerHTML = `
+    <div class="caption" style="margin-bottom:14px;">Comparing against your "${TIERS_META[duelState.tier].label}" ${LABELS[duelState.category]} · round ${duelState.comparisons + 1}</div>
+    <div class="vs-wrap">
+      <div class="duel-card">
+        <div class="duel-media" style="${mediaStyle(duelState.category, duelState.photo)}">${duelState.photo ? '' : itemArt(item, duelState.category)}</div>
+        <div class="duel-body">
+          <div class="duel-name">${item.name}</div>
+          <div class="duel-loc">${item.loc}</div>
+          <div class="duel-blurb">${item.blurb}</div>
+          <button class="btn btn-primary btn-block" data-pick="item">This was better</button>
+        </div>
+      </div>
+      <div class="vs-badge">VS</div>
+      <div class="duel-card">
+        <div class="duel-media" style="${mediaStyle(duelState.category, opponent.photo)}">${opponent.photo ? '' : itemArt(opponent, duelState.category)}</div>
+        <div class="duel-body">
+          <div class="duel-top" style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+            <div class="duel-name">${opponent.name}</div>
+            ${scoreChip(opponent.score, opponent.tier, true)}
+          </div>
+          <div class="duel-loc">${opponent.loc}</div>
+          <div class="duel-blurb">${opponent.blurb}</div>
+          <button class="btn btn-primary btn-block" data-pick="opponent">This was better</button>
+        </div>
+      </div>
+      <div class="duel-actions">
+        <button class="btn btn-outline" style="flex:1;" id="duel-tie">Too tough to call</button>
+        <button class="btn btn-outline" style="flex:1;" id="duel-skip">Skip for now</button>
+      </div>
+    </div>`;
+
+  el.querySelector('[data-pick="item"]').addEventListener('click', () => {
+    duelState.hi = oppIdx;
+    duelState.comparisons++;
+    renderRank();
+  });
+  el.querySelector('[data-pick="opponent"]').addEventListener('click', () => {
+    duelState.lo = oppIdx + 1;
+    duelState.comparisons++;
+    renderRank();
+  });
+  document.getElementById('duel-tie').addEventListener('click', () => {
+    duelState.lo = oppIdx + 1;
+    duelState.comparisons++;
+    renderRank();
+  });
+  document.getElementById('duel-skip').addEventListener('click', () => {
+    duelState = null;
+    renderRank();
+  });
+}
+
+/* ---------------- PROFILE TAB ---------------- */
+function renderWorldMap(){
+  const pins = computeBeenPins().map(p => {
+    const item = findRankedItem(p.id);
+    if(!item) return '';
+    const [x, y] = project(p.lon, p.lat);
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${COLORS[item.category]}" stroke="var(--ink)" stroke-width="0.9"><title>${item.name} — ${item.loc}</title></circle>`;
+  }).join('');
+
+  return `<div class="map-card"><svg viewBox="0 0 ${MAP_W} ${MAP_H}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="${MAP_W}" height="${MAP_H}" fill="var(--parchment)" rx="6"/>
+    <g fill="var(--parchment-2)" stroke="var(--slate)" stroke-width="1" opacity="0.9">
+      ${continentPaths()}
+    </g>
+    ${pins}
+  </svg></div>`;
+}
+
+function renderProfileHeader(){
+  const tier = currentTier();
+  const totalLogged = Object.values(ranked).reduce((n, arr) => n + arr.length, 0);
+  const unlockedBadges = computeAchievements().filter(b => b.unlocked).length;
+  document.getElementById('profile-header').innerHTML = `
+    <div class="profile-head">
+      <div class="avatar" id="user-avatar" style="${userPhoto ? `background-image:url(${userPhoto}); background-size:cover; background-position:center;` : ''}">
+        ${userPhoto ? '' : 'Y'}
+        <div style="position:absolute; bottom:-2px; right:-2px; width:20px; height:20px; border-radius:50%; background:var(--brass); border:2px solid var(--parchment); display:flex; align-items:center; justify-content:center;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.2"/></svg>
+        </div>
+      </div>
+      <input type="file" accept="image/*" id="user-avatar-input" style="display:none;">
+      <div style="flex:1;">
+        <div class="profile-name">You</div>
+        <div class="profile-rank">#342 of 12,480 travelers · Top 8% in Nature</div>
+        <span class="profile-tier-chip">${tier.name} · ${totalLogged} logged</span>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <button class="btn btn-outline btn-sm" style="flex:1;" id="open-badges-btn">Badges (${unlockedBadges})</button>
+      <button class="btn btn-outline btn-sm" style="flex:1;" id="open-recap-btn">Year in Travel</button>
+    </div>`;
+  document.getElementById('open-badges-btn').addEventListener('click', openBadges);
+  document.getElementById('open-recap-btn').addEventListener('click', openRecap);
+  document.getElementById('user-avatar').addEventListener('click', () => document.getElementById('user-avatar-input').click());
+  document.getElementById('user-avatar-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      userPhoto = ev.target.result;
+      renderProfileHeader();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderMapCaption(){
+  const pins = computeBeenPins();
+  const countries = new Set(pins.map(p => {
+    const item = findRankedItem(p.id);
+    return item ? item.loc.split(',').pop().trim() : null;
+  }).filter(Boolean));
+  const legend = Object.keys(LABELS).map(cat => `<span class="legend-dot" style="--c:${COLORS[cat]}">${LABELS[cat]}</span>`).join('');
+  return `<div class="map-caption"><span>${pins.length} places · ${countries.size} countries</span></div>
+  <div class="map-legend" style="margin-top:6px;">${legend}</div>`;
+}
+
+function renderProfilePills(){
+  const pills = [
+    {id:'been', label:'Been'},
+    {id:'want', label:'Want to try'},
+    {id:'recs', label:'Recs for you'},
+    {id:'breakdown', label:'Breakdown'},
+    {id:'leaderboard', label:'Leaderboard'},
+    {id:'standing', label:'Standing'}
+  ];
+  document.getElementById('profile-pills').innerHTML = pills.map(p =>
+    `<button class="pill ${profileSubTab===p.id?'active':''}" data-pill="${p.id}">${p.label}</button>`
+  ).join('');
+  document.querySelectorAll('[data-pill]').forEach(b => b.addEventListener('click', () => {
+    profileSubTab = b.dataset.pill;
+    renderProfileTab();
+  }));
+}
+
+function renderProfileTab(){
+  renderProfileHeader();
+  document.getElementById('taste-map').innerHTML = renderWorldMap() + renderMapCaption();
+  renderProfilePills();
+
+  const content = document.getElementById('profile-content');
+
+  if(profileSubTab === 'standing'){
+    content.innerHTML = renderStandingSection();
+    wireStandingSection();
+    return;
+  }
+
+  if(profileSubTab === 'breakdown'){
+    content.innerHTML = renderBreakdownSection();
+    wireBreakdownSection();
+    return;
+  }
+
+  if(profileSubTab === 'leaderboard'){
+    content.innerHTML = renderLeaderboard();
+    return;
+  }
+
+  content.innerHTML = `<div class="stamps" id="profile-cat-stamps" style="margin:12px 0 14px;"></div><div id="profile-list-inner"></div>`;
+  renderStamps('profile-cat-stamps');
+
+  const target = document.getElementById('profile-list-inner');
+  if(profileSubTab === 'been'){
+    const items = ranked[currentCategory] || [];
+    target.innerHTML = items.length ? items.map((i, idx) => rankRowHTML(i, idx)).join('') : `<div class="empty"><p>Nothing ranked in ${LABELS[currentCategory]} yet.</p></div>`;
+    wireDetailClicks(target, items);
+  } else if(profileSubTab === 'want'){
+    const items = wantToTry[currentCategory] || [];
+    target.innerHTML = renderCategoryFilteredListInner(wantToTry, `Nothing bookmarked in ${LABELS[currentCategory]} yet.`);
+    wireDetailClicks(target, items);
+  } else if(profileSubTab === 'recs'){
+    const items = recs[currentCategory] || [];
+    target.innerHTML = renderCategoryFilteredListInner(recs, `No recommendations in ${LABELS[currentCategory]} yet.`, i => `<div class="rec-why">${i.why}</div>`);
+    wireDetailClicks(target, items);
+  }
+}
+
+function renderBreakdownSection(){
+  const subTabs = [
+    {id:'activities', label:'Activities'},
+    {id:'cities', label:'Cities'},
+    {id:'countries', label:'Countries'}
+  ];
+  const groups = computeBreakdown(breakdownSubTab);
+  const noun = subTabs.find(t => t.id === breakdownSubTab).label;
+
+  return `
+    <div class="pill-nav" id="breakdown-subtabs" style="margin-top:0;">
+      ${subTabs.map(t => `<button class="pill ${breakdownSubTab===t.id?'active':''}" data-subtab="${t.id}">${t.label}</button>`).join('')}
+    </div>
+    <div class="breakdown-header">
+      <span>${groups.length} ${noun}</span>
+      <button class="pill" id="breakdown-sort">Sort: ${breakdownSort === 'count' ? 'Count' : 'Score'}</button>
+    </div>
+    ${groups.length ? groups.map(g => `
+      <div class="breakdown-row" data-group="${g.label}">
+        <div>
+          <div class="rank-name">${g.label}</div>
+          <div class="rank-loc">${g.count} place${g.count>1?'s':''}</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          ${avgCircle(g.avg)}
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--slate)" stroke-width="2" style="width:16px;height:16px;"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+      </div>`).join('') : `<div class="empty"><p>Nothing ranked yet.</p></div>`}
+  `;
+}
+
+function wireBreakdownSection(){
+  document.querySelectorAll('#breakdown-subtabs .pill').forEach(b => b.addEventListener('click', () => {
+    breakdownSubTab = b.dataset.subtab;
+    renderProfileTab();
+  }));
+  document.getElementById('breakdown-sort').addEventListener('click', () => {
+    breakdownSort = breakdownSort === 'count' ? 'score' : 'count';
+    renderProfileTab();
+  });
+  const groups = computeBreakdown(breakdownSubTab);
+  document.querySelectorAll('[data-group]').forEach(el => {
+    const group = groups.find(g => g.label === el.dataset.group);
+    if(group) el.addEventListener('click', () => openGroupDetail(group));
+  });
+}
+
+function openGroupDetail(group){
+  document.getElementById('group-modal').innerHTML = `
+    <h3 style="font-family:'Fraunces',serif; font-size:18px; color:var(--ink); margin-bottom:2px;">${group.label}</h3>
+    <p class="caption" style="text-align:left; margin-bottom:14px;">${group.count} place${group.count>1?'s':''} · avg ${group.avg.toFixed(1)}</p>
+    <div id="group-list-inner">${group.items.map((i, idx) => rankRowHTML(i, idx)).join('')}</div>
+    <button class="btn btn-brass btn-block" id="group-close" style="margin-top:16px;">Close</button>
+  `;
+  document.getElementById('group-overlay').classList.add('active');
+  document.getElementById('group-close').addEventListener('click', () => document.getElementById('group-overlay').classList.remove('active'));
+  wireDetailClicks(document.getElementById('group-list-inner'), group.items);
+}
+document.getElementById('group-overlay').addEventListener('click', (e) => {
+  if(e.target.id === 'group-overlay') document.getElementById('group-overlay').classList.remove('active');
+});
+
+function renderCategoryFilteredListInner(dataset, emptyText, extraLineFn){
+  const items = dataset[currentCategory] || [];
+  return items.length ? items.map(i => `
+    <div class="xcard" data-open-id="${i.id}">
+      <div class="xcard-media" style="${mediaStyle(currentCategory, i.photo)}">${i.photo ? '' : itemArt(i, currentCategory)}</div>
+      <div class="xcard-body">
+        <div class="xcard-top">
+          <div>
+            <div class="xcard-name">${i.name}</div>
+            <div class="xcard-loc">${i.loc}</div>
+          </div>
+        </div>
+        ${extraLineFn ? extraLineFn(i) : `<div class="xcard-blurb">${i.blurb}</div>`}
+        ${miniScoreRow(i)}
+      </div>
+    </div>`).join('') : `<div class="empty"><p>${emptyText}</p></div>`;
+}
+
+function renderStandingSection(){
+  const tier = currentTier();
+  const score = standingScore();
+  const perks = perksUnlocked();
+  const joinedCount = invites.filter(i => i.status === 'joined').length;
+  return `
+    <div class="tier-stamp">
+      <div class="tier-name">${tier.name}</div>
+      <div class="tier-sub">Standing ${score}</div>
+    </div>
+
+    <div class="sec-label" style="margin-top:4px;">Invites</div>
+    <div class="stat-row">
+      <div class="stat-label">Sent</div>
+      <div class="stat-value">${invites.length} / ${user.invitesTotal}</div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" style="width:${(invites.length/user.invitesTotal)*100}%; background:var(--brass);"></div></div>
+    <button class="btn btn-brass btn-block" id="send-invite" style="margin-top:12px;">Send an invite</button>
+
+    ${invites.length ? invites.map(inv => `
+      <div class="stat-row">
+        <div class="stat-label">${inv.handle}</div>
+        ${inv.status === 'joined'
+          ? `<span class="perk-status unlocked">Joined</span>`
+          : `<button class="btn btn-outline btn-sm" data-join="${inv.id}">Mark as joined (demo)</button>`}
+      </div>`).join('') : ''}
+    <p class="caption" style="margin-top:6px; text-align:left;">Average score unlocks once an invite you sent actually joins — not just for sending one. Use "Mark as joined" to simulate that, since there's no real signup here yet.</p>
+
+    <div class="sec-label">Reliability</div>
+    <div class="stat-row">
+      <div class="stat-label">Score</div>
+      <div class="stat-value">${user.reliability}%</div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" style="width:${user.reliability}%;"></div></div>
+    <p class="caption" style="margin-top:6px; text-align:left;">Goes up when you release a spot you can't use ahead of time. Goes down on no-shows.</p>
+
+    <div class="sec-label">Perks</div>
+    <div class="perk-row">
+      <div class="perk-icon ${perks.avgScore ? 'unlocked':'locked'}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+      </div>
+      <div class="perk-text">
+        <div class="perk-name">Average friend score</div>
+        <div class="perk-desc">See how your circle rated a place before you go</div>
+      </div>
+      <div class="perk-status ${perks.avgScore ? 'unlocked':'locked'}">${perks.avgScore ? 'Unlocked' : 'Invite someone who joins'}</div>
+    </div>
+    <div class="perk-row">
+      <div class="perk-icon ${perks.resPriority ? 'unlocked':'locked'}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div class="perk-text">
+        <div class="perk-name">Reservation priority</div>
+        <div class="perk-desc">First in line when a booked spot opens up</div>
+      </div>
+      <div class="perk-status ${perks.resPriority ? 'unlocked':'locked'}">${perks.resPriority ? 'Unlocked' : '3 invites sent + 75% reliability'}</div>
+    </div>
+
+    <div class="sec-label">Upcoming</div>
+    ${upcoming.length ? upcoming.map(u => `
+      <div class="upcoming-card">
+        <div class="upcoming-top">
+          <div>
+            <div class="upcoming-name">${u.name}</div>
+            <div class="upcoming-loc">${u.loc}</div>
+          </div>
+          <div class="upcoming-date">${u.date}</div>
+        </div>
+        <button class="btn btn-outline btn-sm btn-block" style="margin-top:10px;" data-release="${u.id}">Can't make it — release my spot</button>
+      </div>`).join('') : `<p class="caption" style="text-align:left;">Nothing booked right now.</p>`}
+  `;
+}
+
+function wireStandingSection(){
+  document.getElementById('send-invite').addEventListener('click', () => {
+    if(invites.length >= user.invitesTotal){ toast('No invites left this cycle', false); return; }
+    const usedHandles = invites.map(i => i.handle);
+    const next = INVITE_POOL.find(h => !usedHandles.includes(h));
+    if(!next){ toast('No one left in your contacts to invite', false); return; }
+    invites.push({id:'inv' + Date.now(), handle: next, status:'sent'});
+    renderProfileTab();
+    toast(`Invite sent to ${next}`);
+  });
+  document.querySelectorAll('[data-join]').forEach(b => b.addEventListener('click', () => {
+    const inv = invites.find(i => i.id === b.dataset.join);
+    if(!inv) return;
+    const wasAnyJoinedBefore = invites.some(i => i.status === 'joined');
+    inv.status = 'joined';
+    renderProfileTab();
+    toast(wasAnyJoinedBefore ? `${inv.handle} joined` : `${inv.handle} joined — average scores unlocked!`);
+  }));
+  document.querySelectorAll('[data-release]').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.release;
+    upcoming = upcoming.filter(u => u.id !== id);
+    user.reliability = Math.min(100, user.reliability + 4);
+    renderProfileTab();
+    toast('Spot released — reliability +4');
+  }));
+}
+
+document.getElementById('profile-btn').addEventListener('click', () => {
+  document.querySelector('.nav-item[data-tab="profile"]').click();
+});
+document.getElementById('notif-btn').addEventListener('click', openNotifications);
+document.getElementById('msg-btn').addEventListener('click', () => {
+  renderConvoList();
+  document.getElementById('msg-overlay').classList.add('active');
+});
+
+/* ---------------- NAV ---------------- */
+function renderAll(){
+  renderFeed();
+  renderDiscover();
+  renderList();
+  renderQueue();
+  renderRank();
+  renderProfileTab();
+  renderNotifBadge();
+}
+
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + btn.dataset.tab).classList.add('active');
+    document.getElementById('fab-add').style.display = (btn.dataset.tab === 'discover' || btn.dataset.tab === 'list') ? 'flex' : 'none';
+  });
+});
+
+/* ---------------- MODAL ---------------- */
+const overlay = document.getElementById('modal-overlay');
+let submitPhoto = null;
+function wireSubmitPhotoBox(){
+  const trigger = document.getElementById('submit-photo-trigger');
+  if(trigger) trigger.addEventListener('click', () => document.getElementById('submit-photo-input').click());
+  const removeBtn = document.getElementById('submit-photo-remove');
+  if(removeBtn) removeBtn.addEventListener('click', () => { submitPhoto = null; renderSubmitPhotoArea(); });
+}
+function renderSubmitPhotoArea(){
+  const area = document.getElementById('submit-photo-area');
+  area.innerHTML = submitPhoto
+    ? `<div class="photo-preview-wrap"><img class="photo-preview" src="${submitPhoto}"><button class="photo-remove" id="submit-photo-remove">✕</button></div>`
+    : `<div class="photo-box" id="submit-photo-trigger">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.2"/><path d="M8 5l1.5-2h5L16 5"/></svg>
+        Tap to add a photo
+      </div>`;
+  wireSubmitPhotoBox();
+}
+document.getElementById('submit-photo-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => { submitPhoto = ev.target.result; renderSubmitPhotoArea(); };
+  reader.readAsDataURL(file);
+});
+wireSubmitPhotoBox();
+
+function openSubmitModal(prefillName){
+  document.getElementById('f-name').value = prefillName || '';
+  overlay.classList.add('active');
+}
+document.getElementById('fab-add').addEventListener('click', () => openSubmitModal());
+document.getElementById('modal-cancel').addEventListener('click', () => {
+  overlay.classList.remove('active');
+  submitPhoto = null;
+  renderSubmitPhotoArea();
+});
+document.getElementById('modal-submit').addEventListener('click', () => {
+  const name = document.getElementById('f-name').value.trim();
+  const loc = document.getElementById('f-location').value.trim();
+  const category = document.getElementById('f-category').value;
+  const desc = document.getElementById('f-desc').value.trim();
+  const licensed = document.getElementById('f-license').checked;
+  if(!name || !loc){ toast('Add a name and location', false); return; }
+  pending.push({
+    id:'p' + Date.now(),
+    name, loc, category,
+    blurb: desc || 'No description provided.',
+    submitter:'@you',
+    photo: submitPhoto,
+    licensed: !!(submitPhoto && licensed)
+  });
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-location').value = '';
+  document.getElementById('f-desc').value = '';
+  document.getElementById('f-license').checked = false;
+  submitPhoto = null;
+  renderSubmitPhotoArea();
+  overlay.classList.remove('active');
+  renderAll();
+  toast('Submitted — awaiting approval');
+});
+
+document.getElementById('search-input').addEventListener('input', (e) => {
+  renderSearchResults(e.target.value);
+});
+document.getElementById('near-you-select').addEventListener('change', (e) => {
+  nearYouSelectedId = e.target.value;
+  renderNearYou();
+});
+
+renderAll();
+</script>
+</body>
+</html>
