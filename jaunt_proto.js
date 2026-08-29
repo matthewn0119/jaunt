@@ -3201,25 +3201,38 @@ async function approveToCatalog(id){
   // anyone with your site's URL could also insert rows directly, not just through
   // this button. Worth fixing with a real policy (and eventually real auth) once
   // you're past small-scale testing with a friend.
-  if(db){
-    try {
-      const { error } = await db.from('Activities').insert([{
-        Name: item.name, Location: item.loc, Category: item.category, Description: item.blurb
-      }]);
-      if(error){
-        console.error('[Supabase] Insert failed:', error);
-        toast('Added locally, but syncing to the shared database failed — check console', false);
-      } else {
-        console.log('[Supabase] Synced to shared database:', item.name);
-        toast('Added to catalog and synced to the shared database');
-      }
-    } catch(e){
-      console.error('[Supabase] Insert crashed:', e);
-      toast('Added locally, but syncing to the shared database failed — check console', false);
+  await syncItemsToSupabase([{ name: item.name, loc: item.loc, category: item.category, blurb: item.blurb }]);
+}
+/* ---- Shared helper: sync newly-catalogued items to Supabase ----
+   Call this any time item(s) get pushed into `recs` (the shared catalog),
+   whether that's a single admin approval or a bulk "move to catalog" action.
+   Batches everything into one insert call rather than one round-trip per item. */
+async function syncItemsToSupabase(items){
+  if(!items || !items.length) return;
+  if(!db){
+    console.warn('[Supabase] No connection — ' + items.length + ' item(s) saved locally only');
+    toast(items.length === 1
+      ? 'Added locally only — no live database connection, others won\'t see this yet'
+      : `Added ${items.length} items locally only — no live database connection`, false);
+    return;
+  }
+  try {
+    const rows = items.map(item => ({
+      Name: item.name, Location: item.loc, Category: item.category, Description: item.blurb || ''
+    }));
+    const { error } = await db.from('Activities').insert(rows);
+    if(error){
+      console.error('[Supabase] Insert failed:', error);
+      toast(items.length === 1
+        ? 'Added locally, but syncing to the shared database failed — check console'
+        : `Added locally, but syncing ${items.length} items to the shared database failed — check console`, false);
+    } else {
+      console.log(`[Supabase] Synced ${items.length} item(s) to shared database:`, items.map(i => i.name));
+      toast(items.length === 1 ? 'Added to catalog and synced to the shared database' : `Synced ${items.length} items to the shared database`);
     }
-  } else {
-    console.warn('[Supabase] No connection — "' + item.name + '" is only saved in this browser');
-    toast('Added locally only — no live database connection, your friend won\'t see this yet', false);
+  } catch(e){
+    console.error('[Supabase] Insert crashed:', e);
+    toast('Added locally, but syncing to the shared database failed — check console', false);
   }
 }
 function findCatalogRefs(id){
@@ -4204,9 +4217,10 @@ async function syncLocalCatalogToSupabase(){
 }
 function wireStandingSection(){
   const clearToRankBtn = document.getElementById('clear-torank-btn');
-  if(clearToRankBtn) clearToRankBtn.addEventListener('click', () => {
+  if(clearToRankBtn) clearToRankBtn.addEventListener('click', async () => {
     const count = toRank.length;
-    [...toRank].forEach(item => {
+    const movedItems = [...toRank];
+    movedItems.forEach(item => {
       recs[item.category] || (recs[item.category] = []);
       recs[item.category].push({
         id: item.id, name: item.name, loc: item.loc, blurb: item.blurb,
@@ -4220,6 +4234,7 @@ function wireStandingSection(){
     toRank = [];
     renderAll();
     toast(`Moved ${count} items to the catalog — your rank queue is clear`);
+    await syncItemsToSupabase(movedItems.map(item => ({ name: item.name, loc: item.loc, category: item.category, blurb: item.blurb })));
   });
   document.getElementById('sync-catalog-btn').addEventListener('click', syncLocalCatalogToSupabase);
   document.getElementById('export-data-btn').addEventListener('click', exportUserData);
@@ -4311,27 +4326,31 @@ function renderToRankCleanupBanner(){
           <div class="invite-card-sub" style="color:#fff; opacity:0.9;">This usually happens when older bulk-approved activities got added as personal rankings by mistake, before catalog approval existed as a separate option.</div>
           <button class="btn btn-block" style="background:#fff; color:var(--signal); margin-top:10px; font-weight:700;" id="cleanup-torank-now">Move them all to the catalog instead</button>
         </div>`;
-      document.getElementById('cleanup-torank-now').addEventListener('click', () => {
+      document.getElementById('cleanup-torank-now').addEventListener('click', async () => {
         try {
           const count = toRank.length;
+          const movedItems = [];
           [...toRank].forEach(item => {
             const cat = (item && item.category) || 'exploration';
+            const name = (item && item.name) || 'Untitled activity';
+            const loc = (item && item.loc) || 'Unknown location';
+            const blurb = (item && item.blurb) || '';
             recs[cat] || (recs[cat] = []);
             recs[cat].push({
               id: (item && item.id) || ('legacy' + Date.now() + Math.random()),
-              name: (item && item.name) || 'Untitled activity',
-              loc: (item && item.loc) || 'Unknown location',
-              blurb: (item && item.blurb) || '',
+              name, loc, blurb,
               why: 'Newly added to Jaunt', source: 'Curated',
               recommendedScore: 7.5, avgScore: null, trendCount: 0,
               price: (item && item.price) || 2, tags: (item && item.tags) || [],
               recSampleSize: null, avgSampleCount: null,
               photo: (item && item.photo) || null, coverPhoto: (item && item.coverPhoto) || null
             });
+            movedItems.push({ name, loc, category: cat, blurb });
           });
           toRank = [];
           renderAll();
           toast(`Moved ${count} items to the catalog — your rank queue is clear`);
+          await syncItemsToSupabase(movedItems);
         } catch(innerErr){
           toast("Something's blocking the cleanup — try Reset all app data in Standing as a last resort", false);
         }
