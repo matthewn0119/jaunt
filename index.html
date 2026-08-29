@@ -1416,7 +1416,16 @@
   ══════════════════════════════════════════ */
   const SUPABASE_URL = 'https://djgumlhslkzqhcthadhx.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqZ3VtbGhzbGt6cWhjdGhhZGh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NDQ1NDgsImV4cCI6MjEwMzUyMDU0OH0.IdkGj5fhXibig0tB38zGkvKwyky_UP2VbEckjEZ5MxY';
-  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  let db = null;
+  if(typeof supabase !== 'undefined' && supabase.createClient){
+    try {
+      db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } catch(e){
+      console.error('Could not create the Supabase client — app continues without live data', e);
+    }
+  } else {
+    console.warn('Supabase library did not load (blocked, offline, or slow network) — app continues on local/hardcoded data only');
+  }
 /* ---------------- ICONS ---------------- */
 const ICONS = {
   exploration: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19L9 8l4 6 2-3 6 8H3z"/></svg>',
@@ -4579,7 +4588,7 @@ function approveItem(id){
   renderAll();
   toast('Approved — added to ' + LABELS[item.category] + ' to rank');
 }
-function approveToCatalog(id){
+async function approveToCatalog(id){
   if(!isAdmin){ toast('Only admins can approve places', false); return; }
   const idx = pending.findIndex(p => p.id === id);
   if(idx === -1) return;
@@ -4599,7 +4608,32 @@ function approveToCatalog(id){
     bookingUrl: item.bookingUrl || null, affiliateSource: item.affiliateSource || null
   });
   renderAll();
-  toast('Added to catalog — browsable and searchable, not added to your personal rank queue');
+
+  // Write through to Supabase so this is visible to everyone, not just this browser.
+  // This currently works because RLS is disabled on your table — meaning literally
+  // anyone with your site's URL could also insert rows directly, not just through
+  // this button. Worth fixing with a real policy (and eventually real auth) once
+  // you're past small-scale testing with a friend.
+  if(db){
+    try {
+      const { error } = await db.from('Activities').insert([{
+        Name: item.name, Location: item.loc, Category: item.category, Description: item.blurb
+      }]);
+      if(error){
+        console.error('[Supabase] Insert failed:', error);
+        toast('Added locally, but syncing to the shared database failed — check console', false);
+      } else {
+        console.log('[Supabase] Synced to shared database:', item.name);
+        toast('Added to catalog and synced to the shared database');
+      }
+    } catch(e){
+      console.error('[Supabase] Insert crashed:', e);
+      toast('Added locally, but syncing to the shared database failed — check console', false);
+    }
+  } else {
+    console.warn('[Supabase] No connection — "' + item.name + '" is only saved in this browser');
+    toast('Added locally only — no live database connection, your friend won\'t see this yet', false);
+  }
 }
 function findCatalogRefs(id){
   const refs = [];
@@ -5528,12 +5562,59 @@ function renderStandingSection(){
     <div class="sec-label">Data &amp; storage</div>
     <p class="caption" style="text-align:left; margin-bottom:8px;">Your rankings, photos, trips, and settings are saved to this browser automatically.</p>
     ${toRank.length ? `<button class="btn btn-outline btn-block" id="clear-torank-btn" style="margin-bottom:8px;">Move all ${toRank.length} pending "to rank" items to the catalog instead</button>` : ''}
+    <button class="btn btn-brass btn-block" id="sync-catalog-btn" style="margin-bottom:8px;">Push my local catalog to the shared database</button>
+    <p class="caption" style="text-align:left; margin:-2px 0 8px;">One-time sync — sends everything in your catalog to Supabase so anyone with the link sees it too. Safe to run more than once, it skips anything already there.</p>
     <button class="btn btn-outline btn-block" id="export-data-btn" style="margin-bottom:8px;">Download a backup of your data</button>
     <button class="btn btn-outline btn-block" id="reset-data-btn">Reset my personal data</button>
     <p class="caption" style="text-align:left; margin-top:6px;">Clears your rankings, trips, lists, and settings only — the shared activity catalog and guides are untouched.</p>
   `;
 }
 
+async function syncLocalCatalogToSupabase(){
+  if(!db){
+    toast('No live database connection right now — check your network and try again', false);
+    return;
+  }
+  const btn = document.getElementById('sync-catalog-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Checking what\'s already there...'; }
+  try {
+    const { data: existing, error: fetchErr } = await db.from('Activities').select('Name');
+    if(fetchErr){
+      toast('Could not check the shared database — see console', false);
+      console.error('[Supabase] Pre-sync fetch failed:', fetchErr);
+      if(btn){ btn.disabled = false; btn.textContent = 'Push my local catalog to the shared database'; }
+      return;
+    }
+    const existingNames = new Set((existing || []).map(r => normalizeForMatch(r.Name || r.name)));
+    const toInsert = [];
+    Object.values(recs).flat().forEach(item => {
+      const key = normalizeForMatch(item.name);
+      if(existingNames.has(key)) return;
+      existingNames.add(key); // guard against duplicates within our own local data too
+      toInsert.push({ Name: item.name, Location: item.loc, Category: item.category, Description: item.blurb || '' });
+    });
+
+    if(!toInsert.length){
+      toast('Everything in your local catalog is already in the shared database');
+      if(btn){ btn.disabled = false; btn.textContent = 'Push my local catalog to the shared database'; }
+      return;
+    }
+
+    if(btn) btn.textContent = `Sending ${toInsert.length} activities...`;
+    const { error: insertErr } = await db.from('Activities').insert(toInsert);
+    if(insertErr){
+      console.error('[Supabase] Bulk sync failed:', insertErr);
+      toast('Sync failed — check console for details', false);
+    } else {
+      toast(`Synced ${toInsert.length} activities to the shared database`);
+    }
+  } catch(e){
+    console.error('[Supabase] Sync crashed:', e);
+    toast('Sync failed unexpectedly — check console', false);
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = 'Push my local catalog to the shared database'; }
+  }
+}
 function wireStandingSection(){
   const clearToRankBtn = document.getElementById('clear-torank-btn');
   if(clearToRankBtn) clearToRankBtn.addEventListener('click', () => {
@@ -5553,6 +5634,7 @@ function wireStandingSection(){
     renderAll();
     toast(`Moved ${count} items to the catalog — your rank queue is clear`);
   });
+  document.getElementById('sync-catalog-btn').addEventListener('click', syncLocalCatalogToSupabase);
   document.getElementById('export-data-btn').addEventListener('click', exportUserData);
   document.getElementById('reset-data-btn').addEventListener('click', () => {
     if(confirm('This clears your personal rankings, trips, lists, and settings, and reloads the app fresh. The shared activity catalog and guides are NOT affected. This can\'t be undone — consider downloading a backup first. Continue?')){
@@ -6191,12 +6273,67 @@ if(typeof navigator !== 'undefined' && 'onLine' in navigator){
 window.addEventListener('online', () => { offlineMode = false; renderAll(); toast('Back online'); });
 window.addEventListener('offline', () => { offlineMode = true; renderAll(); toast('Connection lost — showing downloaded content'); });
 
+const CATEGORY_ALIAS_MAP = {
+  exploration:'exploration', nature:'nature', adrenaline:'adrenaline', leisure:'leisure', culture:'culture',
+  landmark:'culture', history:'culture', wildlife:'nature', adventure:'adrenaline', scenic:'exploration', relaxation:'leisure'
+};
+async function loadCatalogFromSupabase(){
+  // Read-only: this pulls the shared catalog from your live database so anyone
+  // opening the app sees the same activities, regardless of their own browser's
+  // storage. It only ever adds to `recs` — it never touches personal data, and
+  // never writes back to Supabase (see the note on why writes stay local for now).
+  if(!db){
+    console.warn('Skipping live catalog load — no Supabase connection available');
+    return;
+  }
+  try {
+    const { data, error } = await db.from('Activities').select('*');
+    if(error){
+      console.error('Supabase fetch failed:', error);
+      return;
+    }
+    if(!data || !data.length) return;
+
+    const seen = new Set();
+    Object.values(recs).flat().forEach(i => seen.add(normalizeForMatch(i.name)));
+
+    let added = 0;
+    data.forEach((row, idx) => {
+      const name = (row.Name || row.name || '').trim();
+      const loc = (row.Location || row.location || '').trim();
+      const rawCat = (row.Category || row.category || '').trim().toLowerCase();
+      const desc = (row.Description || row.description || '').trim();
+      if(!name || !loc) return;
+      const key = normalizeForMatch(name);
+      if(seen.has(key)) return; // skip anything already in the hardcoded catalog
+      seen.add(key);
+      const cat = CATEGORY_ALIAS_MAP[rawCat] || (LABELS[rawCat] ? rawCat : 'exploration');
+      recs[cat] = recs[cat] || [];
+      recs[cat].push({
+        id: 'sb' + (row.id !== undefined && row.id !== null ? row.id : idx),
+        name, loc, blurb: desc,
+        why: 'Newly added to Jaunt', source: 'Curated',
+        recommendedScore: 7.5, avgScore: null, trendCount: 0,
+        price: 2, tags: [], recSampleSize: null, avgSampleCount: null,
+        photo: null, coverPhoto: null
+      });
+      added++;
+    });
+    if(added > 0){
+      renderAll();
+      console.log(`Loaded ${added} new activities from Supabase`);
+    }
+  } catch(e){
+    console.error('Supabase load crashed — app continues with local data', e);
+  }
+}
 async function initApp(){
   const hadSavedState = await loadStateOnStartup();
   renderAll();
   if(!hadSavedState || myName === null || myUsername === null){
     setTimeout(openNameStep, 500); // simulates first-launch onboarding
   }
+  loadCatalogFromSupabase(); // fire-and-forget — app works fully before this resolves
 }
 initApp();
 </script>
