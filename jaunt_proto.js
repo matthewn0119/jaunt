@@ -3431,20 +3431,33 @@ function openBulkImport(){
       results.innerHTML = `<p class="caption" style="text-align:left; color:var(--signal);">Paste some rows first.</p>`;
       return;
     }
+    const skipped = [];
+    const seenInBatch = new Set();
     rows.forEach(r => {
+      const key = normalizeForMatch(r.name) + '|' + normalizeForMatch(r.loc);
+      const existingDup = findExactDuplicate(r.name, r.loc);
+      if(existingDup || seenInBatch.has(key)){
+        skipped.push(r.name);
+        return;
+      }
+      seenInBatch.add(key);
       pending.push({
         id: 'p' + Date.now() + Math.random().toString(36).slice(2,6),
         name: r.name, loc: r.loc, category: r.category, blurb: r.blurb,
         submitter: '@you (bulk import)', photo: null, licensed: false
       });
     });
+    const importedCount = rows.length - skipped.length;
     results.innerHTML = `
-      <p class="caption" style="text-align:left; color:var(--trail);">${rows.length} place${rows.length===1?'':'s'} added to the Queue.</p>
+      <p class="caption" style="text-align:left; color:var(--trail);">${importedCount} place${importedCount===1?'':'s'} added to the Queue.</p>
+      ${skipped.length ? `<p class="caption" style="text-align:left; color:var(--signal); margin-top:4px;">${skipped.length} row${skipped.length===1?'':'s'} skipped as exact duplicates (same name and location already exist):<br>${skipped.join('<br>')}</p>` : ''}
       ${errors.length ? `<p class="caption" style="text-align:left; color:var(--signal); margin-top:4px;">${errors.length} row${errors.length===1?'':'s'} skipped:<br>${errors.join('<br>')}</p>` : ''}
     `;
-    if(rows.length){
+    if(importedCount){
       renderAll();
-      toast(`Imported ${rows.length} place${rows.length===1?'':'s'} for review`);
+      toast(`Imported ${importedCount} place${importedCount===1?'':'s'} for review`);
+    } else if(skipped.length){
+      toast('All rows were already in the catalog or queue', false);
     }
   });
 }
@@ -4509,6 +4522,17 @@ function findLikelyDuplicate(name, loc){
   }
   return null;
 }
+/* ---- Exact duplicate detector — the only case that hard-blocks a submission.
+   "Exact" means the normalized name AND the normalized location are both a
+   full match, not just similar/overlapping (that's what findLikelyDuplicate,
+   above, is for — and that one still allows "Submit anyway"). */
+function findExactDuplicate(name, loc){
+  const target = normalizeForMatch(name);
+  const targetLoc = normalizeForMatch(loc);
+  if(!target || !targetLoc) return null;
+  const all = [...Object.values(ranked).flat(), ...Object.values(recs).flat(), ...pending];
+  return all.find(item => normalizeForMatch(item.name) === target && normalizeForMatch(item.loc) === targetLoc) || null;
+}
 const AFFILIATE_MOCK_CATALOG = [
   {name:'Great Barrier Reef Scuba Dive', source:'Viator'},
   {name:'Skydive Interlaken', source:'GetYourGuide'},
@@ -4560,6 +4584,30 @@ function showDuplicateWarning(draft, dup){
   });
   document.getElementById('dup-submit-anyway').addEventListener('click', () => runAffiliateCheck(draft));
 }
+function showExactDuplicateBlock(dup){
+  // Hard block — no "submit anyway" here. This only fires when the name AND
+  // location are an exact match, so letting it through would just create a
+  // true duplicate rather than a maybe-related listing.
+  document.getElementById('submit-processing-area').innerHTML = `
+    <div class="processing-outcome">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--signal);"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+      <div><b>This activity already exists:</b> ${dup.name} (${dup.loc})</div>
+    </div>
+    <p class="caption" style="text-align:left; margin-top:4px;">Same name and location are already in the catalog or queue, so this can't be added again as a duplicate.</p>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button class="btn btn-outline" style="flex:1;" id="exact-dup-view-existing">View existing</button>
+      <button class="btn btn-brass" style="flex:1;" id="exact-dup-edit">Edit and try again</button>
+    </div>`;
+  document.getElementById('exact-dup-view-existing').addEventListener('click', () => {
+    overlay.classList.remove('active');
+    openDetail(dup);
+  });
+  document.getElementById('exact-dup-edit').addEventListener('click', () => {
+    document.getElementById('submit-processing-area').style.display = 'none';
+    document.getElementById('submit-processing-area').innerHTML = '';
+    document.getElementById('submit-action-row').style.display = 'flex';
+  });
+}
 function showAffiliateMatchSuccess(draft, match){
   const bookingUrl = `https://www.${match.source.toLowerCase().replace(/\s/g,'')}.com/mock-listing`;
   document.getElementById('submit-processing-area').innerHTML = `
@@ -4601,6 +4649,8 @@ document.getElementById('modal-submit').addEventListener('click', () => {
   document.getElementById('submit-processing-area').style.display = 'block';
   renderProcessingStep('Checking for existing activities...');
   setTimeout(() => {
+    const exactDup = findExactDuplicate(name, loc);
+    if(exactDup){ showExactDuplicateBlock(exactDup); return; }
     const dup = findLikelyDuplicate(name, loc);
     if(dup){ showDuplicateWarning(draft, dup); return; }
     runAffiliateCheck(draft);
